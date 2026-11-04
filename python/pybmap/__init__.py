@@ -41,7 +41,7 @@ from .protocol import bmap_packet, parse_all_responses, parse_response
 from .transport import RfcommTransport
 from .types import BmapResponse, ButtonMapping, DeviceStatus, EqBand, ModeConfig
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 def connect(mac=None, device_type=None, transport_factory=None, channel_resolver=None):

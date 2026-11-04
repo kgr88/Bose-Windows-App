@@ -1,17 +1,18 @@
 import { useState } from "react";
 import type { ConnectionTarget, DiscoveredDevice } from "../contracts";
+import { Select } from "../components/Controls";
 import {
   button,
-  card,
-  eyebrow,
-  fieldLabel,
-  heading,
+  group,
+  groupList,
   input,
-  muted,
-  pageGrid,
   row,
-  select,
-  smallMuted,
+  rowDetail,
+  section,
+  sectionFooter,
+  sectionHeaderRow,
+  sectionTitle,
+  textButton,
 } from "../styles/ui";
 
 interface Props {
@@ -21,6 +22,25 @@ interface Props {
   onDiscover: () => void;
   onConnect: (device: DiscoveredDevice) => void;
   onManualConnect: (target: ConnectionTarget) => void;
+}
+
+function HeadphonesIcon() {
+  return (
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M4 15v-3a8 8 0 0 1 16 0v3" />
+      <rect x="3" y="14" width="4.5" height="7" rx="2" />
+      <rect x="16.5" y="14" width="4.5" height="7" rx="2" />
+    </svg>
+  );
 }
 
 export function ConnectionPage({
@@ -35,47 +55,61 @@ export function ConnectionPage({
   const [deviceType, setDeviceType] = useState<"qc_ultra2" | "qc35">(
     "qc_ultra2",
   );
+  const busyLabel = state === "connecting" ? "Connecting…" : "Searching…";
   return (
-    <div className={pageGrid}>
-      <section className={card} aria-labelledby="connection-title">
-        <div className={heading}>
-          <div>
-            <p className={eyebrow}>Windows Bluetooth</p>
-            <h2 className="text-[19px] font-bold" id="connection-title">
-              Choose a paired headset
-            </h2>
-          </div>
+    <>
+      {devices.length === 0 ? (
+        <section
+          className={`${section} ${group} flex flex-col items-center px-6 py-10 text-center`}
+          aria-labelledby="connection-title"
+        >
+          <span className="text-accent">
+            <HeadphonesIcon />
+          </span>
+          <h2
+            className="mt-4 mb-0 text-[20px] font-semibold"
+            id="connection-title"
+          >
+            Connect your headphones
+          </h2>
+          <p className="mt-2 mb-6 max-w-[340px] leading-6 text-muted">
+            Pair your headphones in Windows Bluetooth settings first. Then
+            search for them here.
+          </p>
           <button
             className={button}
             type="button"
             onClick={onDiscover}
             disabled={busy}
           >
-            {busy
-              ? state === "connecting"
-                ? "Connecting…"
-                : "Searching…"
-              : "Find devices"}
+            {busy ? busyLabel : "Search for Headphones"}
           </button>
-        </div>
-        {devices.length === 0 ? (
-          <p className={muted}>
-            Pair your headset in Windows Settings, then search again.
-          </p>
-        ) : (
-          <ul className="mt-[18px] list-none p-0">
+        </section>
+      ) : (
+        <section className={section} aria-labelledby="connection-title">
+          <div className={sectionHeaderRow}>
+            <h2 className={sectionTitle} id="connection-title">
+              My Headphones
+            </h2>
+            <button
+              className={textButton}
+              type="button"
+              onClick={onDiscover}
+              disabled={busy}
+            >
+              {busy ? busyLabel : "Search Again"}
+            </button>
+          </div>
+          <ul className={groupList}>
             {devices.map((device) => (
-              <li
-                className={`${row} border-t border-border py-[11px]`}
-                key={device.device_id}
-              >
+              <li className={row} key={device.device_id}>
                 <span>
-                  <strong>{device.name}</strong>
-                  <small className={smallMuted}>
-                    {device.supported
-                      ? "Supported"
-                      : "Choose its model manually"}
-                  </small>
+                  {device.name}
+                  {!device.supported && (
+                    <small className={rowDetail}>
+                      Not recognized. Use “Can’t find your headphones?” below.
+                    </small>
+                  )}
                 </span>
                 <button
                   className={button}
@@ -88,19 +122,14 @@ export function ConnectionPage({
               </li>
             ))}
           </ul>
-        )}
-      </section>
-      <section className={card} aria-labelledby="manual-title">
-        <p className={eyebrow}>Fallback</p>
-        <h2 className="text-[19px] font-bold" id="manual-title">
-          Connect manually
-        </h2>
-        <p className={muted}>
-          Use this when Windows reports the headset without enough model
-          information.
-        </p>
+        </section>
+      )}
+      <details className={section}>
+        <summary className="flex cursor-pointer list-none justify-center text-[15px] text-accent [&::-webkit-details-marker]:hidden">
+          Can’t find your headphones?
+        </summary>
         <form
-          className="mt-[18px] grid gap-[13px]"
+          className="mt-4"
           onSubmit={(event) => {
             event.preventDefault();
             onManualConnect({
@@ -110,39 +139,45 @@ export function ConnectionPage({
             });
           }}
         >
-          <label className={fieldLabel}>
-            Bluetooth address
-            <input
-              className={input}
-              required
-              pattern="[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}"
-              placeholder="AA:BB:CC:DD:EE:FF"
-              value={address}
-              onChange={(event) => setAddress(event.currentTarget.value)}
-            />
-          </label>
-          <label className={fieldLabel}>
-            Headset model
-            <select
-              className={select}
-              value={deviceType}
-              onChange={(event) =>
-                setDeviceType(event.currentTarget.value as typeof deviceType)
-              }
+          <div className={`${group} divide-y divide-separator`}>
+            <label className={row}>
+              <span>Model</span>
+              <Select
+                value={deviceType}
+                onChange={(event) =>
+                  setDeviceType(event.currentTarget.value as typeof deviceType)
+                }
+              >
+                <option value="qc_ultra2">QuietComfort Ultra 2</option>
+                <option value="qc35">QuietComfort 35 / 35 II</option>
+              </Select>
+            </label>
+            <label className={row}>
+              <span>Bluetooth address</span>
+              <input
+                className={`${input} w-[min(220px,55%)] text-right`}
+                required
+                pattern="[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}"
+                placeholder="AA:BB:CC:DD:EE:FF"
+                value={address}
+                onChange={(event) => setAddress(event.currentTarget.value)}
+              />
+            </label>
+          </div>
+          <p className={sectionFooter}>
+            Use this if your headphones don’t appear in the search.
+          </p>
+          <div className="mt-4 flex justify-center">
+            <button
+              className={button}
+              type="submit"
+              disabled={busy || !address.trim()}
             >
-              <option value="qc_ultra2">QC Ultra 2</option>
-              <option value="qc35">QC35 / QC35 II</option>
-            </select>
-          </label>
-          <button
-            className={button}
-            type="submit"
-            disabled={busy || !address.trim()}
-          >
-            Connect
-          </button>
+              Connect
+            </button>
+          </div>
         </form>
-      </section>
-    </div>
+      </details>
+    </>
   );
 }

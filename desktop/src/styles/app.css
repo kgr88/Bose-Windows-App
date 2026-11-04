@@ -1,70 +1,94 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Segoe UI Variable", "Segoe UI", sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", system-ui, sans-serif;
   --color-app: var(--ui-app);
   --color-ink: var(--ui-ink);
   --color-accent: var(--ui-accent);
   --color-accent-soft: var(--ui-accent-soft);
   --color-surface: var(--ui-surface);
-  --color-surface-raised: var(--ui-surface-raised);
-  --color-border: var(--ui-border);
+  --color-fill: var(--ui-fill);
+  --color-control: var(--ui-control);
+  --color-segment: var(--ui-segment);
+  --color-separator: var(--ui-separator);
   --color-muted: var(--ui-muted);
   --color-danger: var(--ui-danger);
+  --color-success: var(--ui-success);
   --color-focus: var(--ui-focus);
   --shadow-card: var(--ui-shadow);
+  --shadow-control: var(--ui-control-shadow);
 }
 
 :root {
   color-scheme: light;
-  --ui-app: #edf1f5;
-  --ui-ink: #18202a;
-  --ui-accent: #1859c9;
-  --ui-accent-soft: #e4edff;
+  --ui-app: #f2f2f7;
+  --ui-ink: #1d1d1f;
+  --ui-accent: #007aff;
+  --ui-accent-soft: rgb(0 122 255 / 12%);
   --ui-surface: #fff;
-  --ui-surface-raised: #f8fafc;
-  --ui-border: #d6dde7;
-  --ui-muted: #607084;
-  --ui-danger: #a32929;
-  --ui-focus: #1769e0;
-  --ui-shadow: 0 8px 28px rgb(20 36 58 / 8%);
+  --ui-fill: rgb(118 118 128 / 12%);
+  --ui-control: #efeff0;
+  --ui-segment: #fff;
+  --ui-app-elevated: #f2f2f7;
+  --ui-surface-elevated: #fff;
+  --ui-separator: rgb(60 60 67 / 18%);
+  --ui-muted: #6e6e73;
+  --ui-danger: #ff3b30;
+  --ui-success: #34c759;
+  --ui-focus: #007aff;
+  --ui-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 4px 16px rgb(0 0 0 / 4%);
+  --ui-control-shadow: 0 3px 8px rgb(0 0 0 / 12%), 0 1px 1px rgb(0 0 0 / 8%);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ui-app: #11161d;
-  --ui-ink: #edf2f8;
-  --ui-surface: #1b222c;
-  --ui-surface-raised: #222b36;
-  --ui-border: #374251;
-  --ui-muted: #a7b3c3;
-  --ui-accent: #77a7ff;
-  --ui-accent-soft: #243752;
-  --ui-danger: #ff9f9f;
-  --ui-focus: #8ab4ff;
-  --ui-shadow: 0 8px 28px rgb(0 0 0 / 22%);
+  --ui-app: #000;
+  --ui-ink: #f5f5f7;
+  --ui-accent: #0a84ff;
+  --ui-accent-soft: rgb(10 132 255 / 18%);
+  --ui-surface: #1c1c1e;
+  --ui-fill: rgb(118 118 128 / 24%);
+  --ui-control: #323236;
+  --ui-segment: #636366;
+  --ui-app-elevated: #1c1c1e;
+  --ui-surface-elevated: #2c2c2e;
+  --ui-separator: rgb(84 84 88 / 55%);
+  --ui-muted: #98989d;
+  --ui-danger: #ff453a;
+  --ui-success: #30d158;
+  --ui-focus: #0a84ff;
+  --ui-shadow: none;
+  --ui-control-shadow: 0 3px 8px rgb(0 0 0 / 35%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --ui-app: #11161d;
-    --ui-ink: #edf2f8;
-    --ui-surface: #1b222c;
-    --ui-surface-raised: #222b36;
-    --ui-border: #374251;
-    --ui-muted: #a7b3c3;
-    --ui-accent: #77a7ff;
-    --ui-accent-soft: #243752;
-    --ui-danger: #ff9f9f;
-    --ui-focus: #8ab4ff;
-    --ui-shadow: 0 8px 28px rgb(0 0 0 / 22%);
+    --ui-app: #000;
+    --ui-ink: #f5f5f7;
+    --ui-accent: #0a84ff;
+    --ui-accent-soft: rgb(10 132 255 / 18%);
+    --ui-surface: #1c1c1e;
+    --ui-fill: rgb(118 118 128 / 24%);
+    --ui-control: #323236;
+    --ui-segment: #636366;
+    --ui-app-elevated: #1c1c1e;
+    --ui-surface-elevated: #2c2c2e;
+    --ui-separator: rgb(84 84 88 / 55%);
+    --ui-muted: #98989d;
+    --ui-danger: #ff453a;
+    --ui-success: #30d158;
+    --ui-focus: #0a84ff;
+    --ui-shadow: none;
+    --ui-control-shadow: 0 3px 8px rgb(0 0 0 / 35%);
   }
 }
 
 @layer base {
   html {
-    @apply min-w-80 bg-app font-sans text-ink;
+    @apply min-w-80 bg-app font-sans text-[15px] text-ink antialiased;
     font-synthesis: none;
   }
   body {
@@ -75,16 +99,131 @@
   select {
     font: inherit;
   }
+  /* The select background is translucent, so the native popup would fall
+     back to light colors behind the inherited text color. */
+  option {
+    @apply bg-surface text-ink;
+  }
   button:focus-visible,
   input:focus-visible,
-  select:focus-visible {
-    @apply outline-3 outline-offset-2 outline-focus;
+  select:focus-visible,
+  summary:focus-visible {
+    @apply outline-3 outline-offset-2 outline-focus/60;
   }
+
+  /* Sheets sit above the page, so they use the elevated colors. Without
+     them a black sheet has no edge on the black page in dark mode. */
+  dialog {
+    --color-app: var(--ui-app-elevated);
+    --color-surface: var(--ui-surface-elevated);
+  }
+  dialog[open] {
+    animation: sheet-in 0.3s ease-out;
+  }
+  dialog[open]::backdrop {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  /* Apple-style slider: thin rounded track, filled up to the white knob. */
   input[type="range"] {
-    @apply w-full accent-accent;
+    --fill: 50%;
+    @apply h-7 w-full cursor-pointer appearance-none bg-transparent disabled:cursor-default disabled:opacity-40;
   }
-  input[type="checkbox"] {
-    @apply size-[19px] accent-accent;
+  input[type="range"]::-webkit-slider-runnable-track {
+    @apply h-1 rounded-full;
+    background: linear-gradient(
+      to right,
+      var(--ui-accent) var(--fill),
+      var(--ui-fill) var(--fill)
+    );
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    @apply -mt-[11px] size-[26px] appearance-none rounded-full border-0 bg-white shadow-control;
+  }
+  input[type="range"].vertical {
+    @apply h-40 w-7;
+    writing-mode: vertical-lr;
+    direction: rtl;
+  }
+  input[type="range"].vertical::-webkit-slider-runnable-track {
+    @apply h-auto w-1;
+    background: linear-gradient(
+      to top,
+      var(--ui-accent) var(--fill),
+      var(--ui-fill) var(--fill)
+    );
+  }
+  input[type="range"].vertical::-webkit-slider-thumb {
+    @apply mt-0 -ml-[11px];
+  }
+}
+
+/* Customizable select (Chromium 135+): the open list joins the button into
+   one rounded shape. Other engines keep the native popup. */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+  select {
+    @apply flex items-center justify-between gap-1.5;
+    /* The Select component sets --fit-width to fit the longest option. */
+    min-width: max(8.5rem, var(--fit-width, 0px));
+  }
+  select::picker-icon {
+    @apply text-[11px] text-muted transition-transform;
+  }
+  select:open {
+    @apply rounded-b-none outline-none;
+  }
+  select[data-drop="up"]:open {
+    @apply rounded-t-none rounded-b-[10px];
+  }
+  select:open::picker-icon {
+    rotate: 180deg;
+  }
+  /* The Select component sets data-drop, so the browser must not flip. */
+  ::picker(select) {
+    @apply m-0 rounded-b-[10px] border-0 bg-control py-1 shadow-card;
+    inline-size: anchor-size(inline);
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: none;
+  }
+  select[data-drop="up"]::picker(select) {
+    @apply rounded-t-[10px] rounded-b-none;
+    position-area: block-start span-inline-end;
+  }
+  option {
+    @apply flex min-h-8 cursor-pointer items-center gap-2 bg-transparent px-3 py-1;
+  }
+  option:hover,
+  option:focus-visible {
+    @apply bg-fill outline-none;
+  }
+  option:checked {
+    @apply font-semibold;
+  }
+  option::checkmark {
+    @apply text-accent;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (forced-colors: active) {
+  input[type="range"] {
+    appearance: auto;
   }
 }
 
@@ -94,5 +233,6 @@
   *::after {
     scroll-behavior: auto !important;
     transition: none !important;
+    animation: none !important;
   }
 }

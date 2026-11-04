@@ -39,8 +39,8 @@ describe("profile controls", () => {
         onError={() => undefined}
       />,
     );
-    expect(html).toContain("Profile details");
-    expect(html).not.toContain("Save changes");
-    expect(html).not.toContain("Create profile");
+    expect(html).not.toContain("Edit Mode");
+    expect(html).not.toContain(">Save<");
+    expect(html).not.toContain(">Create<");
   });
 });

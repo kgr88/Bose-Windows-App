@@ -1,17 +1,26 @@
 import type { ConnectionState } from "../contracts";
 
+const labels: Record<ConnectionState, string> = {
+  disconnected: "Not connected",
+  discovering: "Searching…",
+  connecting: "Connecting…",
+  connected: "Connected",
+  reconnecting: "Reconnecting…",
+  disconnecting: "Disconnecting…",
+  error: "Connection lost",
+};
+
 export function StatusPill({ state }: { state: ConnectionState }) {
-  const stateColor =
+  const dot =
     state === "connected"
-      ? "border-[#65a77f] text-[#197044]"
+      ? "bg-success"
       : state === "error"
-        ? "border-current text-danger"
-        : "border-border";
+        ? "bg-danger"
+        : "bg-muted";
   return (
-    <span
-      className={`${stateColor} whitespace-nowrap rounded-full border bg-surface px-2.5 py-[5px] text-xs capitalize forced-colors:border-[CanvasText]`}
-    >
-      {state.replace("_", " ")}
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] text-muted">
+      <span aria-hidden="true" className={`size-2 rounded-full ${dot}`} />
+      {labels[state]}
     </span>
   );
 }

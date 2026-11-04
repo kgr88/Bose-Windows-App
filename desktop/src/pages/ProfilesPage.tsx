@@ -7,22 +7,31 @@ import type {
   ProfileList,
 } from "../contracts";
 import {
-  button,
-  buttonRow,
-  card,
-  checkboxLabel,
-  dangerButton,
-  eyebrow,
-  fieldLabel,
-  heading,
-  iconButton,
+  ConfirmAlert,
+  Select,
+  Sheet,
+  Slider,
+  Toggle,
+} from "../components/Controls";
+import {
+  dangerTextButton,
+  group,
+  groupList,
   input,
-  muted,
-  pageGrid,
-  secondaryButton,
-  select,
-  smallMuted,
+  row,
+  rowDetail,
+  section,
+  sectionFooter,
+  sectionHeaderRow,
+  sectionTitle,
+  textButton,
 } from "../styles/ui";
+
+const spatialLabels: Record<ProfileInput["spatial"], string> = {
+  off: "Off",
+  room: "Room",
+  motion: "Motion",
+};
 
 interface Props {
   snapshot: DeviceSnapshot;
@@ -51,6 +60,7 @@ export function deviceCncLevel(ancStrength: number) {
 export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
   const [list, setList] = useState<ProfileList | null>(null);
   const [draft, setDraft] = useState<ProfileInput | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Profile | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -93,12 +103,12 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
     }
   }
 
+  function close() {
+    if (!busy) setDraft(null);
+  }
+
   async function remove(profile: Profile) {
-    if (
-      !profile.editable ||
-      !window.confirm(`Delete profile “${profile.name}”?`)
-    )
-      return;
+    setPendingDelete(null);
     setBusy(true);
     try {
       setList(await api.deleteProfile(snapshot.generation, profile.profile_id));
@@ -134,100 +144,133 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
   const canCreate = list !== null && customCount < maximum;
 
   return (
-    <div className={pageGrid}>
-      <section className={card} aria-labelledby="profiles-title">
-        <div className={heading}>
-          <div>
-            <p className={eyebrow}>Listening presets</p>
-            <h2 className="text-[19px] font-bold" id="profiles-title">
-              Profiles
-            </h2>
-          </div>
-          <div className={buttonRow}>
-            {busy && <span role="status">Working…</span>}
+    <>
+      <section className={section} aria-labelledby="profiles-title">
+        <div className={sectionHeaderRow}>
+          <h2 className={sectionTitle} id="profiles-title">
+            Modes
+          </h2>
+          <span className="flex items-baseline gap-3">
+            {busy && (
+              <span className="text-[13px] text-muted" role="status">
+                Working…
+              </span>
+            )}
             <button
-              className={secondaryButton}
+              className={textButton}
               type="button"
               disabled={busy || !canCreate}
               onClick={() => setDraft({ ...newProfile })}
             >
-              New profile
+              New Mode
             </button>
-          </div>
+          </span>
         </div>
-        <ul className="mt-[18px] list-none p-0">
-          {list?.profiles.map((profile) => {
-            const anc = profile.anc_toggle
-              ? `ANC ${profileAncStrength(profile.cnc_level)}/10`
-              : "ANC off";
-            const active = snapshot.values.profile_id === profile.profile_id;
-            return (
-              <li
-                key={profile.profile_id}
-                className={`${active ? "rounded-lg border-accent bg-accent-soft px-2" : "border-transparent border-t-border"} flex items-center justify-between gap-3.5 border py-2`}
-              >
-                <button
-                  className={`${secondaryButton} flex-1 border-transparent text-left`}
-                  type="button"
-                  disabled={busy}
-                  onClick={() => void activate(profile)}
-                >
-                  <strong className="block">{profile.name}</strong>
-                  <small className={smallMuted}>
-                    {anc} · {profile.spatial}
-                  </small>
-                </button>
-                {profile.editable && (
-                  <>
-                    <button
-                      className={`${secondaryButton} ${iconButton}`}
-                      aria-label={`Edit ${profile.name}`}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => edit(profile)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className={`${dangerButton} ${iconButton}`}
-                      aria-label={`Delete ${profile.name}`}
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void remove(profile)}
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {!busy && list?.profiles.length === 0 && (
-          <p className={muted}>No profiles were reported.</p>
+        {!list || list.profiles.length === 0 ? (
+          <div className={`${group} px-4 py-6 text-center text-muted`}>
+            {list ? "No modes yet." : "Loading…"}
+          </div>
+        ) : (
+          <ul className={groupList}>
+            {list.profiles.map((profile) => {
+              const details = [
+                profile.anc_toggle
+                  ? `Noise cancelling ${profileAncStrength(profile.cnc_level)}`
+                  : "Noise cancelling off",
+                profile.spatial !== "off" &&
+                  `Spatial audio: ${spatialLabels[profile.spatial]}`,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              const active = snapshot.values.profile_id === profile.profile_id;
+              return (
+                <li key={profile.profile_id} className={`${row} py-1.5`}>
+                  <button
+                    className="flex flex-1 cursor-pointer items-center gap-3 border-0 bg-transparent py-1 text-left text-ink disabled:cursor-default"
+                    type="button"
+                    aria-pressed={active}
+                    disabled={busy}
+                    onClick={() => void activate(profile)}
+                  >
+                    <span className="flex-1">
+                      {profile.name}
+                      <small className={rowDetail}>{details}</small>
+                    </span>
+                    {active && (
+                      <span className="font-semibold text-accent">✓</span>
+                    )}
+                  </button>
+                  {profile.editable && (
+                    <span className="flex gap-4 pl-2">
+                      <button
+                        className={textButton}
+                        aria-label={`Edit ${profile.name}`}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => edit(profile)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className={dangerTextButton}
+                        aria-label={`Delete ${profile.name}`}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => setPendingDelete(profile)}
+                      >
+                        Delete
+                      </button>
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
+        <p className={sectionFooter}>Select a mode to use it.</p>
       </section>
 
-      <section className={card} aria-labelledby="profile-editor-title">
-        <h2 className="text-[19px] font-bold" id="profile-editor-title">
-          {draft
-            ? draft.profile_id
-              ? "Edit profile"
-              : "New profile"
-            : "Profile details"}
-        </h2>
-        {!draft ? (
-          <p className={muted}>
-            Select a profile to activate it. Use Edit for a custom profile or
-            New profile to change settings.
-          </p>
-        ) : (
-          <>
-            <div className="mt-[18px] grid gap-[13px]">
-              <label className={fieldLabel}>
-                Name
+      {pendingDelete && (
+        <ConfirmAlert
+          title={`Delete “${pendingDelete.name}”?`}
+          message="You can’t undo this."
+          confirmLabel="Delete"
+          onConfirm={() => void remove(pendingDelete)}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
+      {draft && (
+        <Sheet aria-labelledby="profile-editor-title" onClose={close}>
+          <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b border-separator px-4 py-3">
+            <button
+              className={`${textButton} justify-self-start`}
+              type="button"
+              disabled={busy}
+              onClick={close}
+            >
+              Cancel
+            </button>
+            <h2
+              className="m-0 text-[17px] font-semibold"
+              id="profile-editor-title"
+            >
+              {draft.profile_id ? "Edit Mode" : "New Mode"}
+            </h2>
+            <button
+              className={`${textButton} justify-self-end font-semibold`}
+              type="button"
+              disabled={busy || !draft.name.trim()}
+              onClick={() => void save()}
+            >
+              {draft.profile_id ? "Save" : "Create"}
+            </button>
+          </header>
+          <div className="overflow-y-auto px-4 pt-5 pb-6">
+            <div className={`${group} divide-y divide-separator`}>
+              <label className={row}>
+                <span>Name</span>
                 <input
-                  className={input}
+                  className={`${input} w-[min(240px,60%)] text-right`}
                   maxLength={64}
                   value={draft.name}
                   onChange={(event) =>
@@ -235,14 +278,29 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
                   }
                 />
               </label>
-              <label className={fieldLabel}>
-                ANC strength{" "}
-                <output>{profileAncStrength(draft.cnc_level)}/10</output>
-                <input
-                  aria-label="Profile ANC strength"
-                  type="range"
-                  min="0"
-                  max="10"
+              <label className={row}>
+                <span>Noise cancelling</span>
+                <Toggle
+                  checked={draft.anc_toggle}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      anc_toggle: event.currentTarget.checked,
+                    })
+                  }
+                />
+              </label>
+              <label className="block px-4 py-3">
+                <span className="flex justify-between">
+                  <span>Strength</span>
+                  <output className="text-muted tabular-nums">
+                    {profileAncStrength(draft.cnc_level)}
+                  </output>
+                </span>
+                <Slider
+                  aria-label="Noise cancelling strength"
+                  min={0}
+                  max={10}
                   value={profileAncStrength(draft.cnc_level)}
                   disabled={!draft.anc_toggle}
                   onChange={(event) =>
@@ -254,15 +312,27 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
                     })
                   }
                 />
-                <span className="flex justify-between">
-                  <small>Awareness</small>
-                  <small>Maximum ANC</small>
+                <span className="flex justify-between text-[13px] text-muted">
+                  <span>Aware</span>
+                  <span>Quiet</span>
                 </span>
               </label>
-              <label className={fieldLabel}>
-                Spatial audio
-                <select
-                  className={select}
+              <label className={row}>
+                <span>Adjust automatically</span>
+                <Toggle
+                  checked={draft.auto_cnc}
+                  disabled={!draft.anc_toggle}
+                  onChange={(event) =>
+                    setDraft({
+                      ...draft,
+                      auto_cnc: event.currentTarget.checked,
+                    })
+                  }
+                />
+              </label>
+              <label className={row}>
+                <span>Spatial audio</span>
+                <Select
                   value={draft.spatial}
                   onChange={(event) =>
                     setDraft({
@@ -272,41 +342,16 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
                     })
                   }
                 >
-                  <option value="off">Off</option>
-                  <option value="room">Room</option>
-                  <option value="motion">Motion</option>
-                </select>
+                  {Object.entries(spatialLabels).map(([value, label]) => (
+                    <option value={value} key={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
               </label>
-              <label className={checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={draft.anc_toggle}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      anc_toggle: event.currentTarget.checked,
-                    })
-                  }
-                />{" "}
-                Use ANC in this profile
-              </label>
-              <label className={checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={draft.auto_cnc}
-                  disabled={!draft.anc_toggle}
-                  onChange={(event) =>
-                    setDraft({
-                      ...draft,
-                      auto_cnc: event.currentTarget.checked,
-                    })
-                  }
-                />{" "}
-                Adjust ANC automatically
-              </label>
-              <label className={checkboxLabel}>
-                <input
-                  type="checkbox"
+              <label className={row}>
+                <span>Wind block</span>
+                <Toggle
                   checked={draft.wind_block}
                   onChange={(event) =>
                     setDraft({
@@ -314,35 +359,16 @@ export function ProfilesPage({ snapshot, onSnapshot, onError }: Props) {
                       wind_block: event.currentTarget.checked,
                     })
                   }
-                />{" "}
-                Wind block
+                />
               </label>
-              <p className={muted}>
-                Awareness (0/10) is different from turning ANC off. Wind block
-                can reduce the audible effect of ANC strength changes.
-              </p>
             </div>
-            <div className={buttonRow}>
-              <button
-                className={button}
-                type="button"
-                disabled={busy || !draft.name.trim()}
-                onClick={() => void save()}
-              >
-                {draft.profile_id ? "Save changes" : "Create profile"}
-              </button>
-              <button
-                className={secondaryButton}
-                type="button"
-                disabled={busy}
-                onClick={() => setDraft(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-    </div>
+            <p className={sectionFooter}>
+              Wind block reduces wind noise. It can make strength changes harder
+              to hear.
+            </p>
+          </div>
+        </Sheet>
+      )}
+    </>
   );
 }

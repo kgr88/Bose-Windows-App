@@ -25,6 +25,9 @@ desktop/src-tauri/gen/
 # This workspace uses pnpm; ignore npm metadata created at the repository root.
 /package-lock.json
 
+# Claude Code local settings
+/.claude/
+
 # dev files
 /AGENTS.md
 /GUI.md

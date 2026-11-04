@@ -1,22 +1,30 @@
 export const button =
-  "min-h-[34px] cursor-pointer rounded-[7px] border border-[#164da8] bg-accent px-[13px] py-[7px] text-white disabled:cursor-default disabled:opacity-55";
-export const secondaryButton = `${button} border-border bg-surface-raised text-ink`;
-export const selectedButton = `${button} border-accent bg-accent-soft text-accent`;
-export const dangerButton = `${button} border-danger/45 bg-transparent text-danger`;
-export const iconButton = "min-h-[29px] px-2 py-1 text-xs";
+  "min-h-[34px] cursor-pointer rounded-full bg-accent px-[18px] py-1.5 font-medium text-white transition-opacity hover:opacity-90 active:opacity-75 disabled:cursor-default disabled:opacity-40";
+export const secondaryButton =
+  "min-h-[34px] cursor-pointer rounded-full bg-fill px-[18px] py-1.5 font-medium text-accent transition-opacity hover:opacity-80 disabled:cursor-default disabled:opacity-40";
+export const textButton =
+  "cursor-pointer border-0 bg-transparent p-0 text-accent hover:opacity-75 disabled:cursor-default disabled:opacity-40";
+export const dangerTextButton = `${textButton} text-danger`;
 export const input =
-  "min-h-[34px] rounded-[7px] border border-border bg-surface px-[9px] py-1.5 text-ink";
-export const select = input;
-export const card =
-  "mt-5 rounded-xl border border-border bg-surface p-5 shadow-card forced-colors:border-[CanvasText]";
-export const heading = "flex items-center justify-between gap-3.5";
-export const eyebrow =
-  "mb-1 text-[11px] font-bold tracking-[0.09em] text-muted uppercase";
-export const muted = "mt-4 leading-6 text-muted";
+  "min-h-[34px] rounded-[10px] border-0 bg-fill px-3 py-1.5 text-ink placeholder:text-muted";
+export const select =
+  "min-h-[34px] cursor-pointer rounded-[10px] border-0 bg-control py-1.5 pr-2 pl-3 text-ink";
+export const section = "mt-7";
+export const sectionHeader =
+  "mb-1.5 px-4 text-[13px] font-normal tracking-[0.02em] text-muted uppercase";
+export const sectionHeaderRow =
+  "mb-1.5 flex items-baseline justify-between px-4";
+export const sectionTitle = `${sectionHeader} m-0 px-0`;
+export const sectionFooter = "mt-1.5 px-4 text-[13px] leading-5 text-muted";
+export const group =
+  "overflow-hidden rounded-[14px] bg-surface shadow-card forced-colors:border forced-colors:border-[CanvasText]";
+export const groupList = `${group} m-0 list-none divide-y divide-separator p-0`;
+export const row =
+  "flex min-h-[48px] items-center justify-between gap-3 px-4 py-2.5";
+export const rowDetail = "mt-0.5 block text-[13px] text-muted";
+export const segmentedControl = "flex gap-0.5 bg-fill p-0.5";
+export function segment(selected: boolean) {
+  return `${selected ? "bg-segment font-semibold shadow-control" : "bg-transparent hover:opacity-70"} flex-1 cursor-pointer border-0 px-3 whitespace-nowrap text-ink transition-all`;
+}
 export const pageGrid =
-  "grid grid-cols-[repeat(auto-fit,minmax(330px,1fr))] gap-[18px] max-[600px]:grid-cols-1";
-export const row = "flex items-center justify-between gap-3.5";
-export const smallMuted = "mt-[3px] block text-muted";
-export const fieldLabel = "grid gap-1.5 text-[13px] text-muted";
-export const buttonRow = "mt-[18px] flex items-center justify-start gap-3.5";
-export const checkboxLabel = "flex items-center gap-2";
+  "grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-x-6 max-[600px]:grid-cols-1";

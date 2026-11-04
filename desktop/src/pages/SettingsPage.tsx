@@ -5,15 +5,8 @@ import type {
   SettingCapability,
   SettingValue,
 } from "../contracts";
-import {
-  card,
-  eyebrow,
-  input,
-  muted,
-  row,
-  select,
-  smallMuted,
-} from "../styles/ui";
+import { Select, Slider, Toggle } from "../components/Controls";
+import { group, groupList, input, row, rowDetail, section } from "../styles/ui";
 
 interface Props {
   snapshot: DeviceSnapshot;
@@ -34,8 +27,7 @@ function SettingInput({
 }) {
   if (capability.kind === "toggle")
     return (
-      <input
-        type="checkbox"
+      <Toggle
         checked={Boolean(value)}
         disabled={busy || !capability.writable}
         onChange={(e) => onChange(e.currentTarget.checked)}
@@ -43,8 +35,7 @@ function SettingInput({
     );
   if (capability.kind === "choice")
     return (
-      <select
-        className={select}
+      <Select
         value={String(value ?? "")}
         disabled={busy || !capability.writable}
         onChange={(e) => onChange(e.currentTarget.value)}
@@ -54,15 +45,15 @@ function SettingInput({
             {option.label}
           </option>
         ))}
-      </select>
+      </Select>
     );
   if (capability.kind === "range")
     return (
-      <input
-        type="range"
+      <Slider
+        className="max-w-[50%]"
         value={Number(value ?? capability.minimum ?? 0)}
-        min={capability.minimum ?? undefined}
-        max={capability.maximum ?? undefined}
+        min={capability.minimum ?? 0}
+        max={capability.maximum ?? 100}
         step={capability.step ?? undefined}
         disabled={busy || !capability.writable}
         onChange={(e) => onChange(Number(e.currentTarget.value))}
@@ -70,7 +61,7 @@ function SettingInput({
     );
   return (
     <input
-      className={`${input} w-[min(260px,48%)]`}
+      className={`${input} w-[min(260px,48%)] text-right`}
       key={String(value ?? "")}
       type="text"
       defaultValue={String(value ?? "")}
@@ -111,35 +102,34 @@ export function SettingsPage({ snapshot, onSnapshot, onError }: Props) {
       setBusy(null);
     }
   }
+  const settings = snapshot.capabilities.settings;
   return (
-    <section className={card} aria-labelledby="settings-title">
-      <p className={eyebrow}>Device</p>
-      <h2 className="text-[19px] font-bold" id="settings-title">
-        Settings
-      </h2>
-      <div className="mt-3.5">
-        {snapshot.capabilities.settings.map((capability) => (
-          <label
-            className={`${row} min-h-[50px] border-t border-border`}
-            key={capability.key}
-          >
-            <span className="flex-1">
-              <strong>{capability.label}</strong>
-              {!capability.writable && (
-                <small className={smallMuted}>Read only</small>
-              )}
-            </span>
-            <SettingInput
-              capability={capability}
-              value={draft[capability.key]}
-              busy={busy === capability.key}
-              onChange={(value) => void update(capability, value)}
-            />
-          </label>
-        ))}
-      </div>
-      {snapshot.capabilities.settings.length === 0 && (
-        <p className={muted}>No configurable settings were reported.</p>
+    <section className={section} aria-label="Settings">
+      {settings.length === 0 ? (
+        <div className={`${group} px-4 py-6 text-center text-muted`}>
+          There are no settings for these headphones.
+        </div>
+      ) : (
+        <ul className={groupList}>
+          {settings.map((capability) => (
+            <li key={capability.key}>
+              <label className={row}>
+                <span className="flex-1">
+                  {capability.label}
+                  {!capability.writable && (
+                    <small className={rowDetail}>Can’t be changed</small>
+                  )}
+                </span>
+                <SettingInput
+                  capability={capability}
+                  value={draft[capability.key]}
+                  busy={busy === capability.key}
+                  onChange={(value) => void update(capability, value)}
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
       )}
     </section>
   );

@@ -54,7 +54,7 @@ extern "system" {
 #[cfg(windows)]
 fn acquire_single_instance() -> Result<SingleInstanceGuard, ()> {
     const ERROR_ALREADY_EXISTS: u32 = 183;
-    let name: Vec<u16> = "Local\\bosectl-gui-single-instance\0"
+    let name: Vec<u16> = "Local\\bose-windows-app-single-instance\0"
         .encode_utf16()
         .collect();
     let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 0, name.as_ptr()) };

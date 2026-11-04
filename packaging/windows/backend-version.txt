@@ -16,12 +16,12 @@ VSVersionInfo(
         [
           StringStruct(u'CompanyName', u'bosectl contributors'),
           StringStruct(u'FileDescription', u'bosectl Bluetooth backend'),
-          StringStruct(u'FileVersion', u'0.3.0'),
+          StringStruct(u'FileVersion', u'0.4.0'),
           StringStruct(u'InternalName', u'bosectl-backend'),
           StringStruct(u'LegalCopyright', u'Copyright (c) bosectl contributors'),
           StringStruct(u'OriginalFilename', u'bosectl-backend.exe'),
           StringStruct(u'ProductName', u'bosectl'),
-          StringStruct(u'ProductVersion', u'0.3.0'),
+          StringStruct(u'ProductVersion', u'0.4.0'),
         ],
       )
     ]),

@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import type { DeviceSnapshot } from "../contracts";
 import { LatestWriteQueue } from "../state/latestWrite";
-import { card, eyebrow, secondaryButton } from "../styles/ui";
+import { Slider } from "../components/Controls";
+import {
+  group,
+  section,
+  sectionHeaderRow,
+  sectionTitle,
+  textButton,
+} from "../styles/ui";
 
 interface Props {
   snapshot: DeviceSnapshot;
@@ -50,54 +57,56 @@ export function EqualizerPage({ snapshot, onSnapshot, onError }: Props) {
     return () => queue.dispose();
   }, [queue]);
 
+  const reset = () => {
+    const flat = { bass: 0, mid: 0, treble: 0 };
+    writingRef.current = true;
+    setValue(flat);
+    queue.enqueue(flat);
+    void queue.flush();
+  };
+
   return (
-    <section className={card} aria-labelledby="eq-title">
-      <p className={eyebrow}>Sound</p>
-      <h2 className="text-[19px] font-bold" id="eq-title">
-        Equalizer
-      </h2>
-      <div className="my-6 grid grid-cols-3 gap-[18px] max-[600px]:gap-2.5">
-        {snapshot.capabilities.equalizer.map((band) => (
-          <label className="grid gap-[7px] text-center" key={band.id}>
-            <output className="text-[22px] font-semibold text-accent">
-              {value[band.id as keyof EqValue] ?? 0}
-            </output>
-            <span>{band.label}</span>
-            <input
-              aria-label={`${band.label} equalizer`}
-              type="range"
-              min={band.minimum}
-              max={band.maximum}
-              step={band.step}
-              value={value[band.id as keyof EqValue] ?? 0}
-              onChange={(event) => {
-                const next = {
-                  ...value,
-                  [band.id]: Number(event.currentTarget.value),
-                } as EqValue;
-                writingRef.current = true;
-                setValue(next);
-                queue.enqueue(next);
-              }}
-              onPointerUp={() => void queue.flush()}
-              onKeyUp={() => void queue.flush()}
-            />
-          </label>
-        ))}
+    <section className={section} aria-labelledby="eq-title">
+      <div className={sectionHeaderRow}>
+        <h2 className={sectionTitle} id="eq-title">
+          Equalizer
+        </h2>
+        <button className={textButton} type="button" onClick={reset}>
+          Reset
+        </button>
       </div>
-      <button
-        className={secondaryButton}
-        type="button"
-        onClick={() => {
-          const flat = { bass: 0, mid: 0, treble: 0 };
-          writingRef.current = true;
-          setValue(flat);
-          queue.enqueue(flat);
-          void queue.flush();
-        }}
-      >
-        Reset
-      </button>
+      <div className={`${group} flex justify-around px-4 py-6`}>
+        {snapshot.capabilities.equalizer.map((band) => {
+          const current = value[band.id as keyof EqValue] ?? 0;
+          return (
+            <label className="flex flex-col items-center gap-3" key={band.id}>
+              <output className="text-[17px] font-semibold tabular-nums">
+                {current > 0 ? `+${current}` : current}
+              </output>
+              <Slider
+                vertical
+                aria-label={`${band.label} equalizer`}
+                min={band.minimum}
+                max={band.maximum}
+                step={band.step}
+                value={current}
+                onChange={(event) => {
+                  const next = {
+                    ...value,
+                    [band.id]: Number(event.currentTarget.value),
+                  } as EqValue;
+                  writingRef.current = true;
+                  setValue(next);
+                  queue.enqueue(next);
+                }}
+                onPointerUp={() => void queue.flush()}
+                onKeyUp={() => void queue.flush()}
+              />
+              <span className="text-[13px] text-muted">{band.label}</span>
+            </label>
+          );
+        })}
+      </div>
     </section>
   );
 }

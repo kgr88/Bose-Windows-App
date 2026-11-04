@@ -2,7 +2,6 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { api } from "./api";
 import {
   isApiError,
-  PROTOCOL_VERSION,
   type ApiError,
   type ConnectionTarget,
   type DeviceSnapshot,
@@ -17,7 +16,8 @@ import { ProfilesPage } from "./pages/ProfilesPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { initialDeviceState, reduceDeviceEvent } from "./state/deviceState";
 import { durableConnectionTarget } from "./state/connectionTarget";
-import { iconButton, input, secondaryButton } from "./styles/ui";
+import { friendlyError } from "./errorMessages";
+import { segment, segmentedControl, textButton } from "./styles/ui";
 
 type Page = "home" | "equalizer" | "profiles" | "settings" | "diagnostics";
 
@@ -34,6 +34,14 @@ type Theme = "system" | "light" | "dark";
 
 function parseTheme(value: string | null): Theme {
   return value === "light" ? "light" : value === "dark" ? "dark" : "system";
+}
+
+// Flip what is shown. Going back to the system look returns to "system", so
+// every click makes a visible change.
+function toggledTheme(theme: Theme): Theme {
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const shownDark = theme === "dark" || (theme === "system" && systemDark);
+  return shownDark === !systemDark ? "system" : shownDark ? "light" : "dark";
 }
 
 export default function App() {
@@ -270,69 +278,80 @@ export default function App() {
     { id: "home", label: "Home", show: true },
     {
       id: "equalizer",
-      label: "Equalizer",
+      label: "Sound",
       show: Boolean(snapshot?.capabilities.equalizer.length),
     },
     {
       id: "profiles",
-      label: "Profiles",
+      label: "Modes",
       show: Boolean(snapshot?.capabilities.profiles),
     },
     { id: "settings", label: "Settings", show: true },
-    { id: "diagnostics", label: "Diagnostics", show: true },
+    { id: "diagnostics", label: "About", show: true },
   ];
+  const visiblePages = pages.filter((item) => item.show);
+  const themeLabels: Record<Theme, string> = {
+    system: "Automatic",
+    light: "Light",
+    dark: "Dark",
+  };
 
   return (
-    <main className="mx-auto w-full max-w-[900px] px-7 pt-6 pb-8 max-[600px]:p-[18px]">
-      <header className="flex items-center justify-between gap-3.5 max-[600px]:items-start">
-        <div>
-          <p className="mb-1 text-[11px] font-bold tracking-[0.09em] text-muted uppercase">
-            BMAP device controls
-          </p>
-          <h1 className="mr-2.5 inline text-[25px] leading-[1.2] font-bold">
-            {snapshot?.identity?.name ?? "Bose Windows App"}
+    <main className="mx-auto w-full max-w-[760px] px-7 pt-8 pb-10 max-[600px]:px-4 max-[600px]:pt-6">
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="m-0 text-[32px] leading-tight font-bold tracking-[-0.02em]">
+            {connected || state.connection === "reconnecting"
+              ? (snapshot?.identity?.name ?? "Headphones")
+              : "Welcome"}
           </h1>
-          {snapshot?.battery && (
-            <span
-              className="whitespace-nowrap text-[13px] text-muted"
-              aria-label={`Battery ${snapshot.battery.percent} percent`}
-            >
-              {snapshot.battery.percent}% battery
-            </span>
-          )}
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
+            <StatusPill state={state.connection} />
+            {connected && snapshot.battery && (
+              <Battery
+                percent={snapshot.battery.percent}
+                charging={snapshot.battery.charging}
+              />
+            )}
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-3.5 self-start max-[600px]:flex-col max-[600px]:items-end">
-          <StatusPill state={state.connection} />
-          <label>
-            <span className="sr-only">Color theme</span>
-            <select
-              className={`${input} min-h-[29px] py-[3px] text-xs`}
-              aria-label="Color theme"
-              value={theme}
-              onChange={(event) =>
-                setTheme(parseTheme(event.currentTarget.value))
-              }
-            >
-              <option value="system">System theme</option>
-              <option value="light">Light theme</option>
-              <option value="dark">Dark theme</option>
-            </select>
-          </label>
-        </div>
+        <button
+          type="button"
+          className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full border-0 bg-fill text-ink hover:opacity-80"
+          aria-label={`Appearance: ${themeLabels[theme]}`}
+          title={`Appearance: ${themeLabels[theme]}`}
+          onClick={() => setTheme(toggledTheme(theme))}
+        >
+          <ThemeIcon theme={theme} />
+        </button>
       </header>
       {error && (
         <div
-          className="mt-[18px] flex items-center gap-2.5 border-l-[3px] border-danger bg-danger/9 px-3 py-2.5 text-danger"
+          className="mt-6 flex items-start gap-3 rounded-[14px] bg-surface px-4 py-3 shadow-card"
           role="alert"
         >
-          <strong>{error.code}</strong>
-          <span className="flex-1">{error.message}</span>
+          <span
+            aria-hidden="true"
+            className="grid size-6 shrink-0 place-items-center rounded-full bg-danger text-[13px] font-bold text-white"
+          >
+            !
+          </span>
+          <span className="min-w-0 flex-1">
+            {friendlyError(error)}
+            <details className="mt-1 text-[13px] text-muted">
+              <summary className="w-fit cursor-pointer">Details</summary>
+              <span className="mt-1 block [overflow-wrap:anywhere]">
+                {error.code}: {error.message}
+              </span>
+            </details>
+          </span>
           <button
-            className={`${secondaryButton} ${iconButton}`}
-            aria-label="Dismiss error"
+            type="button"
+            className={textButton}
+            aria-label="Dismiss message"
             onClick={() => setLocalError(null)}
           >
-            ×
+            Dismiss
           </button>
         </div>
       )}
@@ -350,22 +369,20 @@ export default function App() {
       ) : (
         <>
           <nav
-            className="mt-5 flex gap-[5px] overflow-x-auto rounded-[9px] border border-border bg-surface p-[3px] forced-colors:border-[CanvasText]"
-            aria-label="Device controls"
+            className={`${segmentedControl} mt-6 overflow-x-auto rounded-[10px] forced-colors:border forced-colors:border-[CanvasText]`}
+            aria-label="Sections"
           >
-            {pages
-              .filter((item) => item.show)
-              .map((item) => (
-                <button
-                  type="button"
-                  className={`${page === item.id ? "border-accent bg-accent-soft text-accent" : "border-transparent bg-surface-raised text-ink"} min-h-[34px] flex-1 cursor-pointer rounded-[7px] border px-[13px] py-[7px] whitespace-nowrap disabled:cursor-default disabled:opacity-55`}
-                  aria-current={page === item.id ? "page" : undefined}
-                  key={item.id}
-                  onClick={() => setPage(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
+            {visiblePages.map((item) => (
+              <button
+                type="button"
+                className={`${segment(page === item.id)} min-h-8 rounded-[8px] py-1 text-[13px]`}
+                aria-current={page === item.id ? "page" : undefined}
+                key={item.id}
+                onClick={() => setPage(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
           {page === "home" && (
             <HomePage
@@ -406,10 +423,69 @@ export default function App() {
           )}
         </>
       )}
-      <footer className="mt-[18px] text-center text-xs text-muted">
-        Protocol v{PROTOCOL_VERSION} · controls are rendered from reported
-        capabilities
-      </footer>
     </main>
+  );
+}
+
+function Battery({
+  percent,
+  charging,
+}: {
+  percent: number;
+  charging: boolean | null;
+}) {
+  const color = charging
+    ? "bg-success"
+    : percent <= 20
+      ? "bg-danger"
+      : "bg-ink";
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-[13px] text-muted"
+      aria-label={`Battery ${percent} percent${charging ? ", charging" : ""}`}
+    >
+      <span
+        aria-hidden="true"
+        className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
+      >
+        <span
+          className={`rounded-[1.5px] ${color}`}
+          style={{ width: `${percent}%` }}
+        />
+      </span>
+      {percent}%{charging && " · Charging"}
+    </span>
+  );
+}
+
+function ThemeIcon({ theme }: { theme: Theme }) {
+  const common = {
+    width: 18,
+    height: 18,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round" as const,
+    "aria-hidden": true,
+  };
+  if (theme === "light")
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </svg>
+    );
+  if (theme === "dark")
+    return (
+      <svg {...common}>
+        <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+      </svg>
+    );
+  return (
+    <svg {...common}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" />
+    </svg>
   );
 }

@@ -7,7 +7,7 @@ describe("diagnosticAddress", () => {
   });
 
   it("does not echo malformed address values", () => {
-    expect(diagnosticAddress("device-secret")).toBe("Redacted");
-    expect(diagnosticAddress(null)).toBe("Not reported");
+    expect(diagnosticAddress("device-secret")).toBe("Hidden");
+    expect(diagnosticAddress(null)).toBe("Unknown");
   });
 });
