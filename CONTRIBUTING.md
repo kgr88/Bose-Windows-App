@@ -98,6 +98,6 @@ with. Do not mark hardware behavior as tested without a real paired headset.
 
 ## Add support for new headphones
 
-Open a [device report](https://github.com/kgr88/bosectl_gui/issues/new/choose)
+Open a [device report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose)
 first. See [Adding a New Device](docs/architecture.md#adding-a-new-device) for
 the steps.

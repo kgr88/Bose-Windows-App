@@ -1,7 +1,7 @@
 # bosectl
 
-[![CI](https://github.com/kgr88/bosectl_gui/actions/workflows/ci.yml/badge.svg)](https://github.com/kgr88/bosectl_gui/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/kgr88/bosectl_gui?include_prereleases)](https://github.com/kgr88/bosectl_gui/releases)
+[![CI](https://github.com/kgr88/Bose-Windows-App/actions/workflows/ci.yml/badge.svg)](https://github.com/kgr88/Bose-Windows-App/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/kgr88/Bose-Windows-App?include_prereleases)](https://github.com/kgr88/Bose-Windows-App/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows_10_%7C_11-0078D4.svg)](#requirements)
 
@@ -13,7 +13,7 @@ controls are always one click away.
 
 ## Download
 
-[**Download the latest installer**](https://github.com/kgr88/bosectl_gui/releases)
+[**Download the latest installer**](https://github.com/kgr88/Bose-Windows-App/releases)
 (`bosectl_<version>_x64-setup.exe`).
 
 ## Features
@@ -38,7 +38,7 @@ The app only shows the controls that your headphones support.
 
 The app also recognizes other Bose headphones, earbuds, and speakers.
 These devices are not tested yet. If you own one, please
-[send a device report](https://github.com/kgr88/bosectl_gui/issues/new/choose).
+[send a device report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose).
 
 ## Requirements
 
@@ -50,7 +50,7 @@ You do not need administrator rights, Python, or any other runtime.
 
 ## Install
 
-1. Download the installer from the [releases page](https://github.com/kgr88/bosectl_gui/releases).
+1. Download the installer from the [releases page](https://github.com/kgr88/Bose-Windows-App/releases).
 2. Run the installer.
 3. If Windows SmartScreen shows a warning, select **More info**, then **Run anyway**.
    The installer is not code-signed yet, so Windows shows this warning.
@@ -81,7 +81,7 @@ Put both files in the same folder, then run this command there. It prints
 - **The connection drops.** Turn Bluetooth off and on in Windows, then reconnect
   in the app.
 - **Something else is wrong.** Open the **Diagnostics** page in the app, then
-  [open a bug report](https://github.com/kgr88/bosectl_gui/issues/new/choose)
+  [open a bug report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose)
   with that information.
 
 ## Uninstall
