@@ -138,6 +138,10 @@ class BmapConnection:
 
     def battery(self):
         """Battery percentage (int)."""
+        return self.battery_levels().percent
+
+    def battery_levels(self):
+        """BatteryLevels with the earbud and charging case levels, if any."""
         return self._get("battery")
 
     def firmware(self):

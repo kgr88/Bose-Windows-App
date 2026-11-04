@@ -24,6 +24,18 @@ interface Props {
   onManualConnect: (target: ConnectionTarget) => void;
 }
 
+const models = {
+  qc_ultra2: {
+    label: "QuietComfort Ultra Headphones (2nd Gen)",
+    deviceType: "qc_ultra2",
+  },
+  qc_ultra2_earbuds: {
+    label: "QuietComfort Ultra Earbuds (2nd Gen)",
+    deviceType: "qc_ultra2",
+  },
+  qc35: { label: "QuietComfort 35 / 35 II", deviceType: "qc35" },
+} as const;
+
 function HeadphonesIcon() {
   return (
     <svg
@@ -52,9 +64,7 @@ export function ConnectionPage({
   onManualConnect,
 }: Props) {
   const [address, setAddress] = useState("");
-  const [deviceType, setDeviceType] = useState<"qc_ultra2" | "qc35">(
-    "qc_ultra2",
-  );
+  const [model, setModel] = useState<keyof typeof models>("qc_ultra2");
   const busyLabel = state === "connecting" ? "Connecting…" : "Searching…";
   return (
     <>
@@ -135,7 +145,7 @@ export function ConnectionPage({
             onManualConnect({
               kind: "manual",
               address: address.trim(),
-              device_type: deviceType,
+              device_type: models[model].deviceType,
             });
           }}
         >
@@ -143,13 +153,16 @@ export function ConnectionPage({
             <label className={row}>
               <span>Model</span>
               <Select
-                value={deviceType}
+                value={model}
                 onChange={(event) =>
-                  setDeviceType(event.currentTarget.value as typeof deviceType)
+                  setModel(event.currentTarget.value as typeof model)
                 }
               >
-                <option value="qc_ultra2">QuietComfort Ultra 2</option>
-                <option value="qc35">QuietComfort 35 / 35 II</option>
+                {Object.entries(models).map(([key, { label }]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
               </Select>
             </label>
             <label className={row}>

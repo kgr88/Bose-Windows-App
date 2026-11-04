@@ -15,3 +15,7 @@ def test_windows_address_and_guid_wire_formats_match_platform_contract():
 
 def test_windows_qc_ultra_2_headphones_alias_is_unambiguous():
     assert _device_from_name("Bose QC Ultra 2 HP") == (0x4082, "qc_ultra2")
+
+
+def test_windows_qc_ultra_2_earbuds_name_selects_earbuds_product():
+    assert _device_from_name("Bose QC Ultra 2 Earbuds") == (0x4062, "qc_ultra2")
