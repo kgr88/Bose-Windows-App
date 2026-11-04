@@ -22,8 +22,8 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/kgr88/bosectl_gui"
-Repository = "https://github.com/kgr88/bosectl_gui"
+Homepage = "https://github.com/kgr88/Bose-Windows-App"
+Repository = "https://github.com/kgr88/Bose-Windows-App"
 
 [build-system]
 requires = ["hatchling"]

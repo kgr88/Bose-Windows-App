@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping with bosectl. This guide explains how to set up the
+Thank you for helping with Bose Windows App. This guide explains how to set up the
 project, run the checks, and open a pull request.
 
 ## Project layout
@@ -98,6 +98,6 @@ with. Do not mark hardware behavior as tested without a real paired headset.
 
 ## Add support for new headphones
 
-Open a [device report](https://github.com/kgr88/bosectl_gui/issues/new/choose)
+Open a [device report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose)
 first. See [Adding a New Device](docs/architecture.md#adding-a-new-device) for
 the steps.
