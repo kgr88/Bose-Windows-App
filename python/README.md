@@ -2,7 +2,7 @@
 
 Python library for the Bose BMAP protocol over Bluetooth RFCOMM. It controls
 noise cancellation, EQ, spatial audio, button mapping, profiles, and device
-settings on paired Bose headphones. The bosectl desktop app uses it as its
+settings on paired Bose headphones. The Bose Windows App uses it as its
 backend.
 
 > **This is not an exploit.** The library uses the BMAP protocol's standard

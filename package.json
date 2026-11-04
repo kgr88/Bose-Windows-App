@@ -1,5 +1,5 @@
 {
-  "name": "bosectl_gui",
+  "name": "bose-windows-app",
   "private": true,
   "packageManager": "pnpm@10.13.1",
   "scripts": {

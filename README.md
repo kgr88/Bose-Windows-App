@@ -1,20 +1,20 @@
-# bosectl
+# Bose Windows App
 
-[![CI](https://github.com/kgr88/bosectl_gui/actions/workflows/ci.yml/badge.svg)](https://github.com/kgr88/bosectl_gui/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/kgr88/bosectl_gui?include_prereleases)](https://github.com/kgr88/bosectl_gui/releases)
+[![CI](https://github.com/kgr88/Bose-Windows-App/actions/workflows/ci.yml/badge.svg)](https://github.com/kgr88/Bose-Windows-App/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/kgr88/Bose-Windows-App?include_prereleases)](https://github.com/kgr88/Bose-Windows-App/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows_10_%7C_11-0078D4.svg)](#requirements)
 
 **Control your Bose headphones from Windows. No Bose app, no cloud, no account.**
 
-bosectl is a small Windows app that connects directly to your paired Bose
+Bose Windows App is a small Windows app that connects directly to your paired Bose
 headphones over Bluetooth. It stays in the system tray, so your headphone
 controls are always one click away.
 
 ## Download
 
-[**Download the latest installer**](https://github.com/kgr88/bosectl_gui/releases)
-(`bosectl_<version>_x64-setup.exe`).
+[**Download the latest installer**](https://github.com/kgr88/Bose-Windows-App/releases)
+(`Bose Windows App_<version>_x64-setup.exe`).
 
 ## Features
 
@@ -38,7 +38,7 @@ The app only shows the controls that your headphones support.
 
 The app also recognizes other Bose headphones, earbuds, and speakers.
 These devices are not tested yet. If you own one, please
-[send a device report](https://github.com/kgr88/bosectl_gui/issues/new/choose).
+[send a device report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose).
 
 ## Requirements
 
@@ -50,28 +50,28 @@ You do not need administrator rights, Python, or any other runtime.
 
 ## Install
 
-1. Download the installer from the [releases page](https://github.com/kgr88/bosectl_gui/releases).
+1. Download the installer from the [releases page](https://github.com/kgr88/Bose-Windows-App/releases).
 2. Run the installer.
 3. If Windows SmartScreen shows a warning, select **More info**, then **Run anyway**.
    The installer is not code-signed yet, so Windows shows this warning.
-4. Start **bosectl** from the Start menu.
+4. Start **Bose Windows App** from the Start menu.
 
 Optional: compare the installer hash with the `.sha256` file from the release.
 Put both files in the same folder, then run this command there. It prints
 `True` when the hashes match:
 
 ```powershell
-(Get-FileHash .\bosectl_<version>_x64-setup.exe -Algorithm SHA256).Hash -eq (Get-Content .\bosectl_<version>_x64-setup.exe.sha256).Split(' ')[0]
+(Get-FileHash ".\Bose Windows App_<version>_x64-setup.exe" -Algorithm SHA256).Hash -eq (Get-Content ".\Bose Windows App_<version>_x64-setup.exe.sha256").Split(' ')[0]
 ```
 
 ## Use
 
 1. Pair your headphones in Windows **Settings > Bluetooth & devices**.
-2. Start bosectl.
+2. Start Bose Windows App.
 3. Select **Find devices**, then select **Connect** next to your headphones.
    If the connection drops, the app tries to reconnect three times.
 4. Change settings in the main window.
-5. Close the window to keep bosectl in the tray.
+5. Close the window to keep Bose Windows App in the tray.
    Right-click the tray icon and select **Quit** to stop the app.
 
 ## Troubleshooting
@@ -81,17 +81,17 @@ Put both files in the same folder, then run this command there. It prints
 - **The connection drops.** Turn Bluetooth off and on in Windows, then reconnect
   in the app.
 - **Something else is wrong.** Open the **Diagnostics** page in the app, then
-  [open a bug report](https://github.com/kgr88/bosectl_gui/issues/new/choose)
+  [open a bug report](https://github.com/kgr88/Bose-Windows-App/issues/new/choose)
   with that information.
 
 ## Uninstall
 
-Open Windows **Settings > Apps > Installed apps**, find **bosectl**, and select
+Open Windows **Settings > Apps > Installed apps**, find **Bose Windows App**, and select
 **Uninstall**.
 
 ## Privacy
 
-bosectl talks only to your headphones. It does not connect to the internet,
+Bose Windows App talks only to your headphones. It does not connect to the internet,
 collect data, or need an account.
 
 ## Contributing
@@ -104,5 +104,5 @@ Technical documentation is in [docs/](docs/).
 This project is a fork of [aaronsb/bosectl](https://github.com/aaronsb/bosectl).
 It is released under the [MIT license](LICENSE).
 
-bosectl is not affiliated with or endorsed by Bose Corporation.
+Bose Windows App is not affiliated with or endorsed by Bose Corporation.
 "Bose" and "QuietComfort" are trademarks of Bose Corporation.

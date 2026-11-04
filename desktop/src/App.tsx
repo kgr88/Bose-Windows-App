@@ -51,7 +51,7 @@ export default function App() {
   const [localError, setLocalError] = useState<ApiError | null>(null);
   const [page, setPage] = useState<Page>("home");
   const [theme, setTheme] = useState<Theme>(() =>
-    parseTheme(localStorage.getItem("bosectl-theme")),
+    parseTheme(localStorage.getItem("bose-windows-app-theme")),
   );
   const refreshing = useRef(false);
   const lastTarget = useRef<ConnectionTarget | null>(null);
@@ -70,8 +70,8 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    if (theme === "system") localStorage.removeItem("bosectl-theme");
-    else localStorage.setItem("bosectl-theme", theme);
+    if (theme === "system") localStorage.removeItem("bose-windows-app-theme");
+    else localStorage.setItem("bose-windows-app-theme", theme);
   }, [theme]);
 
   useEffect(() => {

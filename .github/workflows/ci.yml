@@ -124,7 +124,7 @@ jobs:
         run: ./packaging/windows/build-release.ps1 -PythonExecutable python -SkipTests
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: bosectl-installer
+          name: bose-windows-app-installer
           path: desktop/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*
           if-no-files-found: error
 
@@ -145,7 +145,7 @@ jobs:
         run: python packaging/windows/check_versions.py --tag "$GITHUB_REF_NAME"
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: bosectl-installer
+          name: bose-windows-app-installer
           path: installer
       - name: Create draft release with the installer
         env:
