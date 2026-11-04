@@ -43,7 +43,7 @@ export default function App() {
   const [localError, setLocalError] = useState<ApiError | null>(null);
   const [page, setPage] = useState<Page>("home");
   const [theme, setTheme] = useState<Theme>(() =>
-    parseTheme(localStorage.getItem("bosectl-theme")),
+    parseTheme(localStorage.getItem("bose-windows-app-theme")),
   );
   const refreshing = useRef(false);
   const lastTarget = useRef<ConnectionTarget | null>(null);
@@ -62,8 +62,8 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
-    if (theme === "system") localStorage.removeItem("bosectl-theme");
-    else localStorage.setItem("bosectl-theme", theme);
+    if (theme === "system") localStorage.removeItem("bose-windows-app-theme");
+    else localStorage.setItem("bose-windows-app-theme", theme);
   }, [theme]);
 
   useEffect(() => {
@@ -290,7 +290,7 @@ export default function App() {
             BMAP device controls
           </p>
           <h1 className="mr-2.5 inline text-[25px] leading-[1.2] font-bold">
-            {snapshot?.identity?.name ?? "bosectl"}
+            {snapshot?.identity?.name ?? "Bose Windows App"}
           </h1>
           {snapshot?.battery && (
             <span

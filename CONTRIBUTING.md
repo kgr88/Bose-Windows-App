@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you for helping with bosectl. This guide explains how to set up the
+Thank you for helping with Bose Windows App. This guide explains how to set up the
 project, run the checks, and open a pull request.
 
 ## Project layout
