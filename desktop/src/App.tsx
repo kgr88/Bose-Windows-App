@@ -319,7 +319,7 @@ export default function App() {
             {connected && snapshot.battery?.left_percent != null && (
               <Battery
                 label="Left"
-                earbud="left"
+                icon="left"
                 percent={snapshot.battery.left_percent}
                 charging={null}
               />
@@ -327,7 +327,7 @@ export default function App() {
             {connected && snapshot.battery?.right_percent != null && (
               <Battery
                 label="Right"
-                earbud="right"
+                icon="right"
                 percent={snapshot.battery.right_percent}
                 charging={null}
               />
@@ -335,6 +335,7 @@ export default function App() {
             {connected && snapshot.battery?.case_percent != null && (
               <Battery
                 label="Case"
+                icon="case"
                 percent={snapshot.battery.case_percent}
                 charging={null}
               />
@@ -455,12 +456,12 @@ export default function App() {
 
 function Battery({
   label,
-  earbud,
+  icon,
   percent,
   charging,
 }: {
   label?: string;
-  earbud?: "left" | "right";
+  icon?: DevicePart;
   percent: number;
   charging: boolean | null;
 }) {
@@ -471,14 +472,14 @@ function Battery({
       className="inline-flex items-center gap-1.5 text-[13px] text-muted"
       aria-label={`${label ? `${label} battery` : "Battery"} ${percent} percent${charging ? ", charging" : ""}`}
     >
-      {earbud ? (
-        <EarbudIcon
-          side={earbud}
+      {icon ? (
+        <DevicePartIcon
+          part={icon}
           className={low ? "text-danger" : "text-ink"}
         />
       ) : null}
       {label && <span>{label}</span>}
-      {earbud ? null : (
+      {icon ? null : (
         <span
           aria-hidden="true"
           className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
@@ -494,15 +495,15 @@ function Battery({
   );
 }
 
-function EarbudIcon({
-  side,
+type DevicePart = "left" | "right" | "case";
+
+function DevicePartIcon({
+  part,
   className,
 }: {
-  side: "left" | "right";
+  part: DevicePart;
   className: string;
 }) {
-  // Drawn as the right earbud seen from the front: the ear tip points
-  // up and in. The left earbud is the mirror image.
   return (
     <svg
       width="16"
@@ -516,18 +517,28 @@ function EarbudIcon({
       aria-hidden="true"
       className={className}
     >
-      <g transform={side === "left" ? "matrix(-1 0 0 1 24 0)" : undefined}>
-        <circle cx="14" cy="14" r="6.5" />
-        <circle cx="14" cy="14" r="2.5" />
-        <path d="M9.4 9.4 7.9 7.9" strokeWidth={3} />
-        <ellipse
-          cx="6.3"
-          cy="6.3"
-          rx="3.6"
-          ry="2.2"
-          transform="rotate(-45 6.3 6.3)"
-        />
-      </g>
+      {part === "case" ? (
+        <>
+          <rect x="3" y="6" width="18" height="13" rx="5.5" />
+          <path d="M3.5 10.5h17" />
+          <circle cx="12" cy="15" r="0.9" fill="currentColor" stroke="none" />
+        </>
+      ) : (
+        // The right earbud seen from the front: the ear tip points up and
+        // in. The left earbud is the mirror image.
+        <g transform={part === "left" ? "matrix(-1 0 0 1 24 0)" : undefined}>
+          <circle cx="14" cy="14" r="6.5" />
+          <circle cx="14" cy="14" r="2.5" />
+          <path d="M9.4 9.4 7.9 7.9" strokeWidth={3} />
+          <ellipse
+            cx="6.3"
+            cy="6.3"
+            rx="3.6"
+            ry="2.2"
+            transform="rotate(-45 6.3 6.3)"
+          />
+        </g>
+      )}
     </svg>
   );
 }
