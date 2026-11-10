@@ -1,4 +1,4 @@
-use std::{ffi::c_void, sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 
 use tauri::{
     menu::{Menu, MenuItem},
@@ -7,71 +7,6 @@ use tauri::{
 };
 
 use crate::{commands, state::AppState};
-
-pub struct SingleInstanceGuard {
-    #[cfg(windows)]
-    handle: *mut c_void,
-}
-
-#[cfg(windows)]
-unsafe impl Send for SingleInstanceGuard {}
-#[cfg(windows)]
-unsafe impl Sync for SingleInstanceGuard {}
-
-#[cfg(windows)]
-impl Drop for SingleInstanceGuard {
-    fn drop(&mut self) {
-        if !self.handle.is_null() {
-            unsafe { CloseHandle(self.handle) };
-        }
-    }
-}
-
-#[cfg(all(test, windows))]
-impl SingleInstanceGuard {
-    pub(crate) fn for_test() -> Self {
-        Self {
-            handle: std::ptr::null_mut(),
-        }
-    }
-}
-
-#[cfg(all(test, not(windows)))]
-impl SingleInstanceGuard {
-    pub(crate) fn for_test() -> Self {
-        Self {}
-    }
-}
-
-#[cfg(windows)]
-#[link(name = "kernel32")]
-extern "system" {
-    fn CreateMutexW(attributes: *mut c_void, initial_owner: i32, name: *const u16) -> *mut c_void;
-    fn GetLastError() -> u32;
-    fn CloseHandle(handle: *mut c_void) -> i32;
-}
-
-#[cfg(windows)]
-fn acquire_single_instance() -> Result<SingleInstanceGuard, ()> {
-    const ERROR_ALREADY_EXISTS: u32 = 183;
-    let name: Vec<u16> = "Local\\bose-windows-app-single-instance\0"
-        .encode_utf16()
-        .collect();
-    let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 0, name.as_ptr()) };
-    if handle.is_null() || unsafe { GetLastError() } == ERROR_ALREADY_EXISTS {
-        if !handle.is_null() {
-            unsafe { CloseHandle(handle) };
-        }
-        Err(())
-    } else {
-        Ok(SingleInstanceGuard { handle })
-    }
-}
-
-#[cfg(not(windows))]
-fn acquire_single_instance() -> Result<SingleInstanceGuard, ()> {
-    Ok(SingleInstanceGuard {})
-}
 
 fn open_controls(app: &tauri::AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -195,13 +130,13 @@ fn exit_action(quitting: bool, shutdown_complete: bool) -> ExitAction {
 }
 
 pub fn run() {
-    let single_instance = match acquire_single_instance() {
-        Ok(guard) => guard,
-        Err(()) => return,
-    };
-    let state = AppState::new(single_instance);
     let app = tauri::Builder::default()
-        .manage(state)
+        // The app keeps running in the tray after its window closes. Starting
+        // it again must open the controls of the running app.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            open_controls(app)
+        }))
+        .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::get_backend_info,
             commands::discover_devices,

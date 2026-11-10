@@ -159,6 +159,8 @@ export default function App() {
       if (document.visibilityState === "visible") void poll(true);
     };
     document.addEventListener("visibilitychange", onVisible);
+    // A window that opens from the tray starts with the saved state.
+    void poll(true);
     const timer = window.setInterval(() => {
       pollCount += 1;
       void poll(pollCount % 6 === 0);
