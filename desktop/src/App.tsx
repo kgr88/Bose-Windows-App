@@ -319,6 +319,7 @@ export default function App() {
             {connected && snapshot.battery?.left_percent != null && (
               <Battery
                 label="Left"
+                earbud="left"
                 percent={snapshot.battery.left_percent}
                 charging={null}
               />
@@ -326,6 +327,7 @@ export default function App() {
             {connected && snapshot.battery?.right_percent != null && (
               <Battery
                 label="Right"
+                earbud="right"
                 percent={snapshot.battery.right_percent}
                 charging={null}
               />
@@ -453,35 +455,80 @@ export default function App() {
 
 function Battery({
   label,
+  earbud,
   percent,
   charging,
 }: {
   label?: string;
+  earbud?: "left" | "right";
   percent: number;
   charging: boolean | null;
 }) {
-  const color = charging
-    ? "bg-success"
-    : percent <= 20
-      ? "bg-danger"
-      : "bg-ink";
+  const low = !charging && percent <= 20;
+  const color = charging ? "bg-success" : low ? "bg-danger" : "bg-ink";
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[13px] text-muted"
       aria-label={`${label ? `${label} battery` : "Battery"} ${percent} percent${charging ? ", charging" : ""}`}
     >
-      {label}
-      <span
-        aria-hidden="true"
-        className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
-      >
-        <span
-          className={`rounded-[1.5px] ${color}`}
-          style={{ width: `${percent}%` }}
+      {earbud ? (
+        <EarbudIcon
+          side={earbud}
+          className={low ? "text-danger" : "text-ink"}
         />
-      </span>
+      ) : null}
+      {label && <span>{label}</span>}
+      {earbud ? null : (
+        <span
+          aria-hidden="true"
+          className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
+        >
+          <span
+            className={`rounded-[1.5px] ${color}`}
+            style={{ width: `${percent}%` }}
+          />
+        </span>
+      )}
       {percent}%{charging && " · Charging"}
     </span>
+  );
+}
+
+function EarbudIcon({
+  side,
+  className,
+}: {
+  side: "left" | "right";
+  className: string;
+}) {
+  // Drawn as the right earbud seen from the front: the ear tip points
+  // up and in. The left earbud is the mirror image.
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <g transform={side === "left" ? "matrix(-1 0 0 1 24 0)" : undefined}>
+        <circle cx="14" cy="14" r="6.5" />
+        <circle cx="14" cy="14" r="2.5" />
+        <path d="M9.4 9.4 7.9 7.9" strokeWidth={3} />
+        <ellipse
+          cx="6.3"
+          cy="6.3"
+          rx="3.6"
+          ry="2.2"
+          transform="rotate(-45 6.3 6.3)"
+        />
+      </g>
+    </svg>
   );
 }
 
