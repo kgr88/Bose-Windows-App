@@ -524,19 +524,14 @@ function DevicePartIcon({
           <circle cx="12" cy="15" r="0.9" fill="currentColor" stroke="none" />
         </>
       ) : (
-        // The right earbud seen from the front: the ear tip points up and
-        // in. The left earbud is the mirror image.
+        // The right earbud seen from the front: a tilted solid body with a
+        // D-shaped ear tip on the inner side. The left earbud is the mirror
+        // image.
         <g transform={part === "left" ? "matrix(-1 0 0 1 24 0)" : undefined}>
-          <circle cx="14" cy="14" r="6.5" />
-          <circle cx="14" cy="14" r="2.5" />
-          <path d="M9.4 9.4 7.9 7.9" strokeWidth={3} />
-          <ellipse
-            cx="6.3"
-            cy="6.3"
-            rx="3.6"
-            ry="2.2"
-            transform="rotate(-45 6.3 6.3)"
-          />
+          <g transform="translate(-1.2 0) rotate(20 14 12)" fill="currentColor">
+            <rect x="10" y="4" width="8" height="16" rx="4" />
+            <path d="M8.3 6.6v5.8H7.9a2.9 2.9 0 0 1 0-5.8Z" strokeWidth={0.6} />
+          </g>
         </g>
       )}
     </svg>
