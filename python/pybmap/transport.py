@@ -106,6 +106,12 @@ class RfcommTransport:
         try:
             self._sock.sendall(packet)
             data = self._recv_frame()
+            # The device also sends frames nobody asked for, such as a mode
+            # change made with a headset button. Taking one as the response
+            # would shift every later response by one frame. A drain keeps
+            # every frame because its callers filter by address themselves.
+            while not drain and data[:2] != packet[:2]:
+                data = self._recv_frame()
         except TimeoutError as e:
             if self._buffer:
                 self._buffer.clear()

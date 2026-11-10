@@ -258,6 +258,39 @@ def test_selective_poll_reads_only_requested_live_values():
     assert polled["battery"] == snapshot["battery"]
 
 
+def test_idle_check_notices_a_lost_headset_and_reconnects_to_it():
+    class LostConnection(FakeConnection):
+        def battery_levels(self):
+            raise BmapConnectionError("lost", code="DEVICE_LOST")
+
+    connections = [FakeConnection(), FakeConnection()]
+    service = BackendService(
+        connector=lambda mac, device_type: connections.pop(0), discoverer=lambda: []
+    )
+    service.handle(
+        "connect",
+        {
+            "target": {
+                "kind": "manual",
+                "address": "AA:BB:CC:DD:EE:FF",
+                "device_type": "qc35",
+            }
+        },
+    )
+    service.connection.__class__ = LostConnection
+    service.drain_events()
+
+    with pytest.raises(BmapConnectionError):
+        service.idle()
+    assert service.drain_events()[-1][1]["state"] == "error"
+
+    service.idle()
+    event, snapshot = service.drain_events()[-1]
+    assert event == "snapshot_changed"
+    assert snapshot["connection"]["state"] == "connected"
+    assert snapshot["generation"] == 2
+
+
 def test_typed_channel_rejection_reaches_the_protocol_boundary():
     def rejected(**_kwargs):
         raise BmapConnectionError("rejected", code="SERVICE_NOT_FOUND", channel=7)

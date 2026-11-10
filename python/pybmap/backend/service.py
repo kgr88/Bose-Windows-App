@@ -38,6 +38,7 @@ from .snapshots import (
 
 SPATIAL_TO_WIRE = {0: "off", 1: "room", 2: "motion"}
 SPATIAL_FROM_WIRE = {value: key for key, value in SPATIAL_TO_WIRE.items()}
+RECONNECT_ATTEMPTS = 3
 
 
 class BackendService:
@@ -56,6 +57,8 @@ class BackendService:
         self._address = None
         self._device_type = None
         self._product_id = None
+        self._reconnect_target = None
+        self._reconnects_left = 0
 
     def _empty_capabilities(self):
         return DeviceCapabilities(None, [], [], None)
@@ -168,9 +171,13 @@ class BackendService:
         else:
             address, device_type = target["address"], target["device_type"]
             product_id = None
+        self._reconnects_left = 0
+        return self._open(address, device_type, product_id, ConnectionState.CONNECTING)
+
+    def _open(self, address, device_type, product_id, state):
         self.generation += 1
         self.revision = 0
-        self._connection_state(ConnectionState.CONNECTING)
+        self._connection_state(state)
         try:
             self.connection = self.connector(mac=address, device_type=device_type)
             self._address, self._device_type = address, device_type
@@ -181,7 +188,31 @@ class BackendService:
             self._connection_state(ConnectionState.ERROR, "connection_failed")
             raise
 
+    def idle(self):
+        """Check the headset when no request arrived for a while.
+
+        The renderer polls only while its window is visible. Without this
+        check, the tray and the next window would show a headset that is gone.
+        """
+        if self.connection is not None:
+            target = (self._address, self._device_type, self._product_id)
+            try:
+                self._handle_poll_snapshot(
+                    {
+                        "generation": self.generation,
+                        "fields": ("battery", "noise_control"),
+                    }
+                )
+            except (BmapConnectionError, BmapTimeoutError):
+                self._reconnect_target = target
+                self._reconnects_left = RECONNECT_ATTEMPTS
+                raise
+        elif self._reconnects_left:
+            self._reconnects_left -= 1
+            self._open(*self._reconnect_target, ConnectionState.RECONNECTING)
+
     def _handle_disconnect(self, params):
+        self._reconnects_left = 0
         self._connection_state(ConnectionState.DISCONNECTING)
         self._close_connection()
         self._connection_state(ConnectionState.DISCONNECTED)
