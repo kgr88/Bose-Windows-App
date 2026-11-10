@@ -54,7 +54,7 @@ extern "system" {
 #[cfg(windows)]
 fn acquire_single_instance() -> Result<SingleInstanceGuard, ()> {
     const ERROR_ALREADY_EXISTS: u32 = 183;
-    let name: Vec<u16> = "Local\\bosectl-gui-single-instance\0"
+    let name: Vec<u16> = "Local\\bose-windows-app-single-instance\0"
         .encode_utf16()
         .collect();
     let handle = unsafe { CreateMutexW(std::ptr::null_mut(), 0, name.as_ptr()) };
@@ -81,7 +81,7 @@ fn open_controls(app: &tauri::AppHandle) {
         return;
     }
     if let Ok(window) = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-        .title("bosectl")
+        .title("Bose Windows App")
         .inner_size(780.0, 620.0)
         .min_inner_size(520.0, 420.0)
         .center()
@@ -226,7 +226,7 @@ pub fn run() {
             let menu = Menu::with_items(app, &[&open, &quit])?;
             TrayIconBuilder::with_id("main-tray")
                 .icon(tray_image(None))
-                .tooltip("bosectl")
+                .tooltip("Bose Windows App")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -254,7 +254,7 @@ pub fn run() {
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building bosectl");
+        .expect("error while building Bose Windows App");
 
     app.run(|app, event| match event {
         RunEvent::WindowEvent {

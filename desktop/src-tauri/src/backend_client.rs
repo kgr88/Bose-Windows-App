@@ -380,30 +380,38 @@ fn update_tray_status(app: &AppHandle, event: &DeviceEvent) {
                 .map_or(TrayIconUpdate::Default, |battery| {
                     TrayIconUpdate::Battery(battery.percent)
                 });
-            (format!("bosectl · {name}{battery}"), icon_update)
+            (format!("Bose Windows App · {name}{battery}"), icon_update)
         }
         DeviceEvent::ConnectionChanged { data } => match data.state {
-            ConnectionState::Discovering => {
-                ("bosectl · Discovering…".into(), TrayIconUpdate::Default)
+            ConnectionState::Discovering => (
+                "Bose Windows App · Discovering…".into(),
+                TrayIconUpdate::Default,
+            ),
+            ConnectionState::Connecting | ConnectionState::Reconnecting => (
+                "Bose Windows App · Connecting…".into(),
+                TrayIconUpdate::Default,
+            ),
+            ConnectionState::Disconnecting => (
+                "Bose Windows App · Disconnecting…".into(),
+                TrayIconUpdate::Default,
+            ),
+            ConnectionState::Disconnected => (
+                "Bose Windows App · Disconnected".into(),
+                TrayIconUpdate::Default,
+            ),
+            ConnectionState::Error => (
+                "Bose Windows App · Connection error".into(),
+                TrayIconUpdate::Default,
+            ),
+            ConnectionState::Connected => {
+                ("Bose Windows App · Connected".into(), TrayIconUpdate::Keep)
             }
-            ConnectionState::Connecting | ConnectionState::Reconnecting => {
-                ("bosectl · Connecting…".into(), TrayIconUpdate::Default)
-            }
-            ConnectionState::Disconnecting => {
-                ("bosectl · Disconnecting…".into(), TrayIconUpdate::Default)
-            }
-            ConnectionState::Disconnected => {
-                ("bosectl · Disconnected".into(), TrayIconUpdate::Default)
-            }
-            ConnectionState::Error => {
-                ("bosectl · Connection error".into(), TrayIconUpdate::Default)
-            }
-            ConnectionState::Connected => ("bosectl · Connected".into(), TrayIconUpdate::Keep),
         },
-        DeviceEvent::BackendError { .. } => {
-            ("bosectl · Backend error".into(), TrayIconUpdate::Default)
-        }
-        DeviceEvent::SnapshotChanged { .. } => ("bosectl".into(), TrayIconUpdate::Default),
+        DeviceEvent::BackendError { .. } => (
+            "Bose Windows App · Backend error".into(),
+            TrayIconUpdate::Default,
+        ),
+        DeviceEvent::SnapshotChanged { .. } => ("Bose Windows App".into(), TrayIconUpdate::Default),
     };
     if let Some(tray) = app.tray_by_id("main-tray") {
         let _ = tray.set_tooltip(Some(tooltip));

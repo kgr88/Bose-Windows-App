@@ -1,4 +1,4 @@
-# bosectl Windows desktop development
+# Bose Windows App Windows desktop development
 
 Stage 2 implements the Windows Bluetooth backend, supervised JSON-lines
 sidecar, native tray/window lifecycle, and capability-driven React controls.
