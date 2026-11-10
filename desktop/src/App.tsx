@@ -307,10 +307,37 @@ export default function App() {
           </h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
             <StatusPill state={state.connection} />
-            {connected && snapshot.battery && (
+            {connected &&
+              snapshot.battery &&
+              snapshot.battery.left_percent == null &&
+              snapshot.battery.right_percent == null && (
+                <Battery
+                  percent={snapshot.battery.percent}
+                  charging={snapshot.battery.charging}
+                />
+              )}
+            {connected && snapshot.battery?.left_percent != null && (
               <Battery
-                percent={snapshot.battery.percent}
-                charging={snapshot.battery.charging}
+                label="Left"
+                icon="left"
+                percent={snapshot.battery.left_percent}
+                charging={null}
+              />
+            )}
+            {connected && snapshot.battery?.right_percent != null && (
+              <Battery
+                label="Right"
+                icon="right"
+                percent={snapshot.battery.right_percent}
+                charging={null}
+              />
+            )}
+            {connected && snapshot.battery?.case_percent != null && (
+              <Battery
+                label="Case"
+                icon="case"
+                percent={snapshot.battery.case_percent}
+                charging={null}
               />
             )}
           </div>
@@ -428,33 +455,86 @@ export default function App() {
 }
 
 function Battery({
+  label,
+  icon,
   percent,
   charging,
 }: {
+  label?: string;
+  icon?: DevicePart;
   percent: number;
   charging: boolean | null;
 }) {
-  const color = charging
-    ? "bg-success"
-    : percent <= 20
-      ? "bg-danger"
-      : "bg-ink";
+  const low = !charging && percent <= 20;
+  const color = charging ? "bg-success" : low ? "bg-danger" : "bg-ink";
   return (
     <span
       className="inline-flex items-center gap-1.5 text-[13px] text-muted"
-      aria-label={`Battery ${percent} percent${charging ? ", charging" : ""}`}
+      aria-label={`${label ? `${label} battery` : "Battery"} ${percent} percent${charging ? ", charging" : ""}`}
     >
-      <span
-        aria-hidden="true"
-        className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
-      >
-        <span
-          className={`rounded-[1.5px] ${color}`}
-          style={{ width: `${percent}%` }}
+      {icon ? (
+        <DevicePartIcon
+          part={icon}
+          className={low ? "text-danger" : "text-ink"}
         />
-      </span>
+      ) : null}
+      {label && <span>{label}</span>}
+      {icon ? null : (
+        <span
+          aria-hidden="true"
+          className="relative flex h-[11px] w-[22px] rounded-[3px] border border-muted p-px after:absolute after:top-[3px] after:-right-[3px] after:h-[3px] after:w-[1.5px] after:rounded-r-sm after:bg-muted"
+        >
+          <span
+            className={`rounded-[1.5px] ${color}`}
+            style={{ width: `${percent}%` }}
+          />
+        </span>
+      )}
       {percent}%{charging && " · Charging"}
     </span>
+  );
+}
+
+type DevicePart = "left" | "right" | "case";
+
+function DevicePartIcon({
+  part,
+  className,
+}: {
+  part: DevicePart;
+  className: string;
+}) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      {part === "case" ? (
+        <>
+          <rect x="3" y="6" width="18" height="13" rx="5.5" />
+          <path d="M3.5 10.5h17" />
+          <circle cx="12" cy="15" r="0.9" fill="currentColor" stroke="none" />
+        </>
+      ) : (
+        // The right earbud seen from the front: a tilted solid body with a
+        // D-shaped ear tip on the inner side. The left earbud is the mirror
+        // image.
+        <g transform={part === "left" ? "matrix(-1 0 0 1 24 0)" : undefined}>
+          <g transform="translate(-1.2 0) rotate(20 14 12)" fill="currentColor">
+            <rect x="10" y="4" width="8" height="16" rx="4" />
+            <path d="M8.3 6.6v5.8H7.9a2.9 2.9 0 0 1 0-5.8Z" strokeWidth={0.6} />
+          </g>
+        </g>
+      )}
+    </svg>
   );
 }
 

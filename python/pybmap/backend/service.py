@@ -198,8 +198,7 @@ class BackendService:
         values = snapshot.values
         try:
             if "battery" in params["fields"]:
-                percent = connection.battery()
-                battery = BatteryStatus(max(0, min(100, int(percent))), None)
+                battery = _battery_status(connection)
             if "noise_control" in params["fields"]:
                 capability = snapshot.capabilities.noise_control
                 noise_value = values.noise_control
@@ -319,7 +318,7 @@ class BackendService:
     def _refresh_snapshot(self):
         connection = self._require_connection()
         try:
-            battery = connection.battery()
+            battery = _battery_status(connection)
             name = self._read(
                 "product_name", connection.name, connection.device_info["name"]
             )
@@ -335,7 +334,7 @@ class BackendService:
             )
             snapshot = DeviceSnapshot(
                 identity,
-                BatteryStatus(max(0, min(100, int(battery))), None),
+                battery,
                 FirmwareInfo(firmware or ""),
                 ConnectionStatus(
                     ConnectionState.CONNECTED,
@@ -508,6 +507,17 @@ class BackendService:
         if isinstance(exc, BmapError):
             return ProtocolError("UNSUPPORTED_OPERATION", str(exc))
         return None
+
+
+def _battery_status(connection):
+    levels = connection.battery_levels()
+    return BatteryStatus(
+        max(0, min(100, int(levels.percent))),
+        None,
+        levels.left,
+        levels.right,
+        levels.case,
+    )
 
 
 def _choices(values):

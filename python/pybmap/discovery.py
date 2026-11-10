@@ -65,7 +65,7 @@ def _device_from_name(name):
         )
         return product_id, "qc35"
     if re.search(r"\bqc ultra 2(?: hp| headphones)?\b", normalized):
-        return 0x4082, "qc_ultra2"
+        return (0x4062 if "earbud" in normalized else 0x4082), "qc_ultra2"
     if ("quietcomfort ultra" in normalized or "qc ultra" in normalized) and (
         "2nd gen" in normalized
         or "second gen" in normalized

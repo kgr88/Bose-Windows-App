@@ -59,10 +59,31 @@ function disconnected(): DeviceSnapshot {
   };
 }
 
-function connected(
-  kind: "qc_ultra2" | "qc35",
-  generation: number,
-): DeviceSnapshot {
+type MockDevice = "qc_ultra2" | "qc_ultra2_earbuds" | "qc35";
+const earbudsAddress = "AA:BB:CC:02:00:02";
+
+function connected(kind: MockDevice, generation: number): DeviceSnapshot {
+  if (kind === "qc_ultra2_earbuds") {
+    const headphones = connected("qc_ultra2", generation);
+    return {
+      ...headphones,
+      identity: {
+        device_id: earbudsAddress,
+        name: "QC Ultra Earbuds",
+        model: "Bose QC Ultra Earbuds (2nd Gen)",
+        product_id: 0x4062,
+        device_type: "qc_ultra2",
+        address: earbudsAddress,
+      },
+      battery: {
+        percent: 60,
+        charging: null,
+        left_percent: 80,
+        right_percent: 60,
+        case_percent: 20,
+      },
+    };
+  }
   if (kind === "qc35")
     return {
       identity: {
@@ -73,7 +94,13 @@ function connected(
         device_type: "qc35",
         address: "AA:BB:CC:35:00:01",
       },
-      battery: { percent: 72, charging: null },
+      battery: {
+        percent: 72,
+        charging: null,
+        left_percent: null,
+        right_percent: null,
+        case_percent: null,
+      },
       firmware: { version: "4.8.1" },
       connection: { state: "connected", reason: null, rfcomm_channel: 8 },
       capabilities: {
@@ -128,7 +155,13 @@ function connected(
       device_type: "qc_ultra2",
       address: "AA:BB:CC:02:00:01",
     },
-    battery: { percent: 88, charging: false },
+    battery: {
+      percent: 88,
+      charging: false,
+      left_percent: null,
+      right_percent: null,
+      case_percent: null,
+    },
     firmware: { version: "8.2.20" },
     connection: { state: "connected", reason: null, rfcomm_channel: 2 },
     capabilities: {
@@ -223,12 +256,17 @@ export function createMockApi(): BoseApi {
     revision: snapshot.revision,
     profiles: profiles.map((profile) => ({ ...profile })),
   });
-  const targetType = (target: ConnectionTarget) =>
+  // The app turns a discovered device into a manual target with its address.
+  const targetType = (target: ConnectionTarget): MockDevice =>
     target.kind === "manual"
-      ? target.device_type
+      ? target.address === earbudsAddress
+        ? "qc_ultra2_earbuds"
+        : target.device_type
       : target.device_id.includes("qc35")
         ? "qc35"
-        : "qc_ultra2";
+        : target.device_id.includes("earbuds")
+          ? "qc_ultra2_earbuds"
+          : "qc_ultra2";
 
   return {
     async backendInfo() {
@@ -246,6 +284,16 @@ export function createMockApi(): BoseApi {
           address: "AA:BB:CC:02:00:01",
           name: "QuietComfort Ultra 2",
           product_id: 0x4082,
+          device_type: "qc_ultra2",
+          rfcomm_channel: 2,
+          paired: true,
+          supported: true,
+        },
+        {
+          device_id: "mock-qc-ultra2-earbuds",
+          address: earbudsAddress,
+          name: "QC Ultra Earbuds",
+          product_id: 0x4062,
           device_type: "qc_ultra2",
           rfcomm_channel: 2,
           paired: true,

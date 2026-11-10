@@ -14,16 +14,42 @@ from ..constants import (
     SOURCE_TYPES,
 )
 from ..protocol import encode_mode_name
-from ..types import AudioSettings, AudioSource, ButtonMapping, EqBand, ModeConfig
+from ..types import (
+    AudioSettings,
+    AudioSource,
+    BatteryLevels,
+    ButtonMapping,
+    EqBand,
+    ModeConfig,
+)
 
 # ── Standard Parsers ─────────────────────────────────────────────────────────
 
 
+RIGHT_EARBUD = 1
+LEFT_EARBUD = 2
+CASE_BATTERY = 3
+
+
 def parse_battery(payload):
-    """Parse battery level. Returns percentage int."""
-    if payload:
-        return payload[0]
-    return None
+    """Parse a battery STATUS into BatteryLevels.
+
+    Headphones report one level in the first byte. Earbuds report 4-byte
+    records [percent, 0xff, 0xff, component]: 1 is the right earbud, 2 the left
+    earbud and 3 the charging case. A level above 100 means unknown. For
+    earbuds the main percent is the lower earbud level.
+    """
+    levels = {
+        payload[i + 3]: payload[i]
+        for i in range(0, len(payload) - 3, 4)
+        if payload[i] <= 100
+    }
+    left = levels.get(LEFT_EARBUD)
+    right = levels.get(RIGHT_EARBUD)
+    earbuds = [level for level in (left, right) if level is not None]
+    if not earbuds:
+        return BatteryLevels(payload[0] if payload else None, None, None, None)
+    return BatteryLevels(min(earbuds), left, right, levels.get(CASE_BATTERY))
 
 
 def parse_firmware(payload):

@@ -25,6 +25,10 @@ ModeConfig = namedtuple(
     ],
 )
 
+# Battery levels from one [2.2] read. Earbud and case levels are None on
+# headphones and when the earbuds report an unknown level.
+BatteryLevels = namedtuple("BatteryLevels", ["percent", "left", "right", "case"])
+
 # A single EQ band reading.
 EqBand = namedtuple("EqBand", ["band_id", "name", "min_val", "max_val", "current"])
 
