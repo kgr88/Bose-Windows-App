@@ -17,6 +17,12 @@ export const initialDeviceState: DeviceState = {
   connection: "disconnected",
 };
 
+const deviceLost: ApiError = {
+  code: "DEVICE_LOST",
+  message: "The headset connection was lost.",
+  retryable: true,
+};
+
 export type DeviceStateEvent = DeviceEvent | { event: "session_reset" };
 
 export function isNewer(
@@ -54,7 +60,19 @@ export function reduceDeviceEvent(
           event.data.revision < state.snapshot.revision))
     )
       return state;
-    return { ...state, connection: event.data.state };
+    // The sidecar reports a headset loss it found by itself, and a reconnect
+    // of its own that failed, only by this event. Give the window an error
+    // to show.
+    const error =
+      event.data.state === "error" &&
+      (event.data.reason === "device_lost" ||
+        event.data.reason === "connection_failed")
+        ? deviceLost
+        : event.data.state === "reconnecting" ||
+            event.data.state === "connected"
+          ? null
+          : state.error;
+    return { ...state, connection: event.data.state, error };
   }
   if (!isNewer(state.snapshot, event.data)) return state;
   return {
