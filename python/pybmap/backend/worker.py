@@ -49,6 +49,14 @@ def _parse_work(line):
         return (None, exc)
 
 
+def _write(stdout, service, messages=()):
+    for message in messages:
+        stdout.write(encode_message(message))
+    for event, data in service.drain_events():
+        stdout.write(encode_message(event_message(event, data)))
+    stdout.flush()
+
+
 def run(stdin=None, stdout=None, stderr=None, service=None):
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
@@ -59,7 +67,19 @@ def run(stdin=None, stdout=None, stderr=None, service=None):
     threading.Thread(target=_reader, args=(stdin, incoming), daemon=True).start()
 
     while True:
-        item = backlog.popleft() if backlog else incoming.get()
+        try:
+            item = (
+                backlog.popleft()
+                if backlog
+                else incoming.get(timeout=service.idle_timeout())
+            )
+        except Empty:
+            try:
+                service.idle()
+            except Exception as exc:  # The service already recorded the new state.
+                print("backend idle check failed: %s" % type(exc).__name__, file=stderr)
+            _write(stdout, service)
+            continue
         if item is _EOF:
             break
         request, parse_error = item if isinstance(item, tuple) else _parse_work(item)
@@ -114,11 +134,7 @@ def run(stdin=None, stdout=None, stderr=None, service=None):
                 for item in group
             ]
 
-        for message in messages:
-            stdout.write(encode_message(message))
-        for event, data in service.drain_events():
-            stdout.write(encode_message(event_message(event, data)))
-        stdout.flush()
+        _write(stdout, service, messages)
         if service.stopping:
             break
     return 0

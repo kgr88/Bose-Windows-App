@@ -6,9 +6,9 @@ use std::sync::{
 use crate::{
     backend_client::BackendClient,
     contracts::{ApiError, ConnectionState, DeviceEvent, DeviceSnapshot, ErrorCode},
-    lifecycle::SingleInstanceGuard,
 };
 
+#[derive(Default)]
 pub struct AppState {
     pub backend: BackendClient,
     generation: AtomicU64,
@@ -17,23 +17,9 @@ pub struct AppState {
     snapshot: Mutex<Option<DeviceSnapshot>>,
     pub quitting: AtomicBool,
     pub shutdown_complete: AtomicBool,
-    pub _single_instance: SingleInstanceGuard,
 }
 
 impl AppState {
-    pub fn new(single_instance: SingleInstanceGuard) -> Self {
-        Self {
-            backend: BackendClient::default(),
-            generation: AtomicU64::new(0),
-            revision: AtomicU64::new(0),
-            connection_attempt: AtomicU64::new(0),
-            snapshot: Mutex::new(None),
-            quitting: AtomicBool::new(false),
-            shutdown_complete: AtomicBool::new(false),
-            _single_instance: single_instance,
-        }
-    }
-
     pub fn begin_connection(&self) -> u64 {
         self.clear_snapshot();
         self.connection_attempt.fetch_add(1, Ordering::AcqRel) + 1
@@ -147,7 +133,6 @@ impl AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lifecycle::SingleInstanceGuard;
 
     fn snapshot(generation: u64, revision: u64) -> DeviceSnapshot {
         serde_json::from_value(serde_json::json!({
@@ -161,7 +146,7 @@ mod tests {
 
     #[test]
     fn rejects_old_generations_and_revisions() {
-        let state = AppState::new(SingleInstanceGuard::for_test());
+        let state = AppState::default();
         state.accept_snapshot(snapshot(2, 4)).unwrap();
         assert_eq!(
             state.accept_snapshot(snapshot(1, 99)).unwrap_err().code,
@@ -176,7 +161,7 @@ mod tests {
 
     #[test]
     fn connection_attempt_starts_a_new_backend_ordering_epoch() {
-        let state = AppState::new(SingleInstanceGuard::for_test());
+        let state = AppState::default();
         state.accept_snapshot(snapshot(7, 40)).unwrap();
 
         let attempt = state.begin_connection();
@@ -201,7 +186,7 @@ mod tests {
 
     #[test]
     fn cached_snapshot_is_available_for_a_recreated_webview_and_clears_on_disconnect() {
-        let state = AppState::new(SingleInstanceGuard::for_test());
+        let state = AppState::default();
         state.accept_snapshot(snapshot(2, 4)).unwrap();
         assert_eq!(state.current_snapshot().unwrap().unwrap().revision, 4);
         state.record_backend_event(&DeviceEvent::ConnectionChanged {

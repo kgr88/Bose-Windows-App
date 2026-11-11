@@ -4,7 +4,11 @@ import pytest
 
 from pybmap.backend.protocol import ProtocolError
 from pybmap.backend.service import BackendService
-from pybmap.discovery import _device_from_name
+from pybmap.discovery import (
+    BluetoothDiscoveryError,
+    DiscoveredDevice,
+    _device_from_name,
+)
 from pybmap.errors import BmapConnectionError
 from pybmap.types import BatteryLevels
 
@@ -256,6 +260,108 @@ def test_selective_poll_reads_only_requested_live_values():
 
     assert polled["values"]["noise_control"]["value"] == "wind"
     assert polled["battery"] == snapshot["battery"]
+
+
+class LostConnection(FakeConnection):
+    def battery_levels(self):
+        raise BmapConnectionError("lost", code="DEVICE_LOST")
+
+
+class Clock:
+    now = 100.0
+
+    def __call__(self):
+        return self.now
+
+
+MANUAL_TARGET = {
+    "target": {"kind": "manual", "address": "AA:BB:CC:DD:EE:FF", "device_type": "qc35"}
+}
+
+
+def windows_reports(connected):
+    return [
+        DiscoveredDevice(
+            "aa:bb:cc:dd:ee:ff", "QC35", None, 8, 0x4020, "qc35", True, connected
+        )
+    ]
+
+
+def lost_service(discoverer):
+    """Return a service whose connected headset was lost during a poll."""
+    clock = Clock()
+    connections = [FakeConnection(), FakeConnection()]
+    service = BackendService(
+        connector=lambda mac, device_type: connections.pop(0),
+        discoverer=discoverer,
+        clock=clock,
+    )
+    snapshot = service.handle("connect", MANUAL_TARGET)
+    service.connection.__class__ = LostConnection
+    with pytest.raises(ProtocolError) as caught:
+        service.handle(
+            "poll_snapshot",
+            {"generation": snapshot["generation"], "fields": ["battery"]},
+        )
+    assert caught.value.code == "DEVICE_LOST"
+    assert service.drain_events()[-1][1]["reason"] == "device_lost"
+    return service, clock
+
+
+def test_loss_found_by_a_poll_reconnects_when_windows_reports_the_headset():
+    reports = [windows_reports(False), windows_reports(True)]
+    service, clock = lost_service(lambda: reports.pop(0))
+
+    assert service.idle_timeout() == 2
+    clock.now += 2
+    service.idle()
+    assert service.drain_events() == []
+    assert service.connection is None
+
+    clock.now += service.idle_timeout()
+    service.idle()
+    events = service.drain_events()
+    assert events[0][1]["state"] == "reconnecting"
+    assert events[-1][1]["connection"]["state"] == "connected"
+    assert service.idle_timeout() == 30
+
+
+def test_reconnect_checks_never_stop_while_the_headset_is_away():
+    checks = []
+
+    def discoverer():
+        checks.append(clock.now)
+        if len(checks) % 3 == 0:
+            raise BluetoothDiscoveryError("BLUETOOTH_UNAVAILABLE", "radio off")
+        return windows_reports(False)
+
+    service, clock = lost_service(discoverer)
+    for _ in range(50):
+        clock.now += service.idle_timeout()
+        try:
+            service.idle()
+        except BluetoothDiscoveryError:
+            pass
+
+    assert len(checks) == 50
+    assert checks[-1] - checks[-2] == 30
+    assert service.idle_timeout() == 30
+
+
+@pytest.mark.parametrize("method", ["connect", "disconnect"])
+def test_user_connect_or_disconnect_cancels_the_reconnect(method):
+    service, clock = lost_service(lambda: pytest.fail("unexpected reconnect check"))
+    if method == "connect":
+        # The headset is lost again while the first snapshot is read.
+        service.connector = lambda mac, device_type: LostConnection()
+        with pytest.raises(ProtocolError):
+            service.handle("connect", MANUAL_TARGET)
+    else:
+        service.handle("disconnect", {})
+
+    assert service.idle_timeout() == 30
+    clock.now += 60
+    service.idle()
 
 
 def test_typed_channel_rejection_reaches_the_protocol_boundary():

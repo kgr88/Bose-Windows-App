@@ -57,6 +57,9 @@ export default function App() {
   const lastTarget = useRef<ConnectionTarget | null>(null);
   const reconnectAttempts = useRef(0);
   const reconnectScheduled = useRef(false);
+  // The generation of a connected snapshot that came from currentSnapshot.
+  const restoredGeneration = useRef<number | null>(null);
+  const connectedGeneration = useRef<number | null>(null);
 
   const reportError = useCallback(
     (error: unknown) => setLocalError(asApiError(error)),
@@ -106,6 +109,8 @@ export default function App() {
             device_type: identity.device_type,
           };
         }
+        if (restored.connection.state === "connected")
+          restoredGeneration.current = restored.generation;
         acceptSnapshot(restored);
       })
       .catch((error: unknown) => {
@@ -159,6 +164,12 @@ export default function App() {
       if (document.visibilityState === "visible") void poll(true);
     };
     document.addEventListener("visibilitychange", onVisible);
+    // A window that opens from the tray starts with the saved state. A
+    // connect or reconnect has already read every value.
+    if (restoredGeneration.current === generation) {
+      restoredGeneration.current = null;
+      void poll(true);
+    }
     const timer = window.setInterval(() => {
       pollCount += 1;
       void poll(pollCount % 6 === 0);
@@ -169,11 +180,24 @@ export default function App() {
     };
   }, [state.connection, generation, acceptSnapshot, reportError]);
 
+  // A request error from before the sidecar reconnected by itself is stale.
   useEffect(() => {
-    const error = localError ?? state.error;
+    if (state.connection !== "connected" || generation === undefined) return;
+    if (
+      connectedGeneration.current !== null &&
+      connectedGeneration.current !== generation
+    )
+      setLocalError(null);
+    connectedGeneration.current = generation;
+  }, [state.connection, generation]);
+
+  // The sidecar reconnects to a lost headset by itself. Only a crashed
+  // sidecar needs a new request from the renderer to start again.
+  useEffect(() => {
     if (
       state.connection !== "error" ||
-      !error?.retryable ||
+      (localError?.code !== "BACKEND_CRASHED" &&
+        state.error?.code !== "BACKEND_CRASHED") ||
       !lastTarget.current ||
       reconnectAttempts.current >= 3 ||
       reconnectScheduled.current
