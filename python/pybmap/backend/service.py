@@ -1,6 +1,7 @@
 """Serialized native device service used by the JSON-lines worker."""
 
 import platform
+import time
 from collections import OrderedDict
 
 import pybmap
@@ -38,15 +39,18 @@ from .snapshots import (
 
 SPATIAL_TO_WIRE = {0: "off", 1: "room", 2: "motion"}
 SPATIAL_FROM_WIRE = {value: key for key, value in SPATIAL_TO_WIRE.items()}
-RECONNECT_ATTEMPTS = 3
+IDLE_CHECK_SECONDS = 30
+RECONNECT_FIRST_SECONDS = 2
+RECONNECT_MAX_SECONDS = 30
 
 
 class BackendService:
     """Own exactly one connection; all methods are called by one worker thread."""
 
-    def __init__(self, connector=None, discoverer=None):
+    def __init__(self, connector=None, discoverer=None, clock=time.monotonic):
         self.connector = connector or pybmap.connect
         self.discoverer = discoverer or discover_devices
+        self.clock = clock
         self.connection = None
         self.stopping = False
         self.generation = 0
@@ -58,7 +62,8 @@ class BackendService:
         self._device_type = None
         self._product_id = None
         self._reconnect_target = None
-        self._reconnects_left = 0
+        self._reconnect_delay = 0
+        self._reconnect_due = 0
 
     def _empty_capabilities(self):
         return DeviceCapabilities(None, [], [], None)
@@ -151,6 +156,7 @@ class BackendService:
         return {"devices": devices}
 
     def _handle_connect(self, params):
+        self._reconnect_target = None
         if self.connection is not None:
             self._close_connection()
         target = params["target"]
@@ -171,8 +177,15 @@ class BackendService:
         else:
             address, device_type = target["address"], target["device_type"]
             product_id = None
-        self._reconnects_left = 0
-        return self._open(address, device_type, product_id, ConnectionState.CONNECTING)
+        try:
+            return self._open(
+                address, device_type, product_id, ConnectionState.CONNECTING
+            )
+        except Exception:
+            # A loss while reading the first snapshot arms the reconnect, but
+            # a failed user connect must not retry on its own.
+            self._reconnect_target = None
+            raise
 
     def _open(self, address, device_type, product_id, state):
         self.generation += 1
@@ -188,31 +201,61 @@ class BackendService:
             self._connection_state(ConnectionState.ERROR, "connection_failed")
             raise
 
+    def idle_timeout(self):
+        """Return the seconds until ``idle`` has work to do."""
+        if self._reconnect_target is None:
+            return IDLE_CHECK_SECONDS
+        return max(0, self._reconnect_due - self.clock())
+
     def idle(self):
         """Check the headset when no request arrived for a while.
 
         The renderer polls only while its window is visible. Without this
         check, the tray and the next window would show a headset that is gone.
+        After a loss, try to reconnect on a schedule that never stops.
         """
         if self.connection is not None:
-            target = (self._address, self._device_type, self._product_id)
-            try:
-                self._handle_poll_snapshot(
-                    {
-                        "generation": self.generation,
-                        "fields": ("battery", "noise_control"),
-                    }
-                )
-            except (BmapConnectionError, BmapTimeoutError):
-                self._reconnect_target = target
-                self._reconnects_left = RECONNECT_ATTEMPTS
-                raise
-        elif self._reconnects_left:
-            self._reconnects_left -= 1
-            self._open(*self._reconnect_target, ConnectionState.RECONNECTING)
+            self._handle_poll_snapshot(
+                {"generation": self.generation, "fields": ("battery", "noise_control")}
+            )
+            return
+        target = self._reconnect_target
+        if target is None or self.clock() < self._reconnect_due:
+            return
+        delay = min(self._reconnect_delay * 2, RECONNECT_MAX_SECONDS)
+        self._arm_reconnect(target, delay)
+        # Connect only while Windows reports the headset connected. This keeps
+        # the slow socket connect out of the common case of a headset that is
+        # away, and does not take a headset from a phone that is using it.
+        address = target[0].upper()
+        try:
+            devices = self.discoverer()
+        except BluetoothDiscoveryError:
+            return  # The radio is off. The next check looks again.
+        if not any(
+            device.connected and device.address.upper() == address for device in devices
+        ):
+            return
+        try:
+            self._open(*target, ConnectionState.RECONNECTING)
+        except Exception:
+            self._arm_reconnect(target, delay)
+            raise
+        self._reconnect_target = None
+
+    def _arm_reconnect(self, target, delay):
+        self._reconnect_target = target
+        self._reconnect_delay = delay
+        self._reconnect_due = self.clock() + delay
+
+    def _lose_connection(self):
+        target = (self._address, self._device_type, self._product_id)
+        self._close_connection()
+        self._connection_state(ConnectionState.ERROR, "device_lost")
+        self._arm_reconnect(target, RECONNECT_FIRST_SECONDS)
 
     def _handle_disconnect(self, params):
-        self._reconnects_left = 0
+        self._reconnect_target = None
         self._connection_state(ConnectionState.DISCONNECTING)
         self._close_connection()
         self._connection_state(ConnectionState.DISCONNECTED)
@@ -246,8 +289,7 @@ class BackendService:
                 )
             return self._bump(snapshot._replace(battery=battery, values=values))
         except (BmapConnectionError, BmapTimeoutError):
-            self._close_connection()
-            self._connection_state(ConnectionState.ERROR, "device_lost")
+            self._lose_connection()
             raise
 
     def _handle_set_noise_control(self, params):
@@ -314,6 +356,7 @@ class BackendService:
 
     def _handle_shutdown(self, params):
         self.stopping = True
+        self._reconnect_target = None
         self._close_connection()
         return {"ok": True}
 
@@ -379,8 +422,7 @@ class BackendService:
             )
             return self._bump(snapshot)
         except (BmapConnectionError, BmapTimeoutError):
-            self._close_connection()
-            self._connection_state(ConnectionState.ERROR, "device_lost")
+            self._lose_connection()
             raise
 
     def _capabilities_and_values(self, connection):

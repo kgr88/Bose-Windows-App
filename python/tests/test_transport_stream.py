@@ -1,6 +1,8 @@
+import errno
+
 import pytest
 
-from pybmap.errors import BmapConnectionError
+from pybmap.errors import BmapConnectionError, BmapTimeoutError
 from pybmap.transport import RfcommTransport, _translate_socket_error
 
 
@@ -59,6 +61,18 @@ def test_frame_for_another_address_is_not_taken_as_the_response():
     assert transport.send_recv(b"\x02\x02\x01\x00") == response
 
 
+def test_endless_unsolicited_frames_end_in_a_timeout():
+    class ChattySocket(FakeSocket):
+        def recv(self, size):
+            return b"\x1f\x03\x03\x01A"
+
+    transport = RfcommTransport("AA:BB:CC:DD:EE:FF", timeout=0.05)
+    transport._sock = ChattySocket([])
+    with pytest.raises(BmapTimeoutError):
+        transport.send_recv(b"\x02\x02\x01\x00")
+    assert transport._sock.timeout == 3.0
+
+
 def test_drain_collects_frames_and_restores_timeout():
     first = b"\x01\x01\x03\x01A"
     second = b"\x01\x01\x03\x01B"
@@ -88,3 +102,16 @@ def test_windows_socket_categories_remain_actionable(winerror, code):
     translated = _translate_socket_error(error, "connect", channel=7)
     assert translated.code == code
     assert translated.channel == 7
+
+
+def test_broken_socket_reports_device_loss_and_not_a_raw_socket_error():
+    class BrokenSocket(FakeSocket):
+        def recv(self, size):
+            self.settimeout = self.recv  # Every later call on the socket fails.
+            raise ConnectionResetError(errno.ECONNRESET, "reset")
+
+    transport = RfcommTransport("AA:BB:CC:DD:EE:FF")
+    transport._sock = BrokenSocket([])
+    with pytest.raises(BmapConnectionError) as error:
+        transport.send_recv(b"\x02\x02\x01\x00")
+    assert error.value.code == "DEVICE_LOST"

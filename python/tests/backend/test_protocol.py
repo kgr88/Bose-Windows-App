@@ -123,6 +123,9 @@ def test_worker_coalesces_rapid_equalizer_writes_and_answers_every_request():
             self.calls.append((method, params))
             return {"revision": len(self.calls), "bass": params["bass"]}
 
+        def idle_timeout(self):
+            return 30
+
         def drain_events(self):
             return []
 
@@ -156,6 +159,9 @@ def test_worker_internal_error_log_never_includes_exception_data():
 
         def handle(self, method, params):
             raise RuntimeError("device AA:BB:CC:DD:EE:FF packet deadbeef")
+
+        def idle_timeout(self):
+            return 30
 
         def drain_events(self):
             return []

@@ -2,6 +2,7 @@
 
 import errno
 import socket
+import time
 
 from .errors import BmapConnectionError, BmapTimeoutError
 
@@ -68,19 +69,24 @@ class RfcommTransport:
             self._sock = None
             self._buffer.clear()
 
-    def _recv_into_buffer(self):
+    def _recv_into_buffer(self, deadline=None):
+        if deadline is not None:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise TimeoutError()
+            self._sock.settimeout(remaining)
         chunk = self._sock.recv(4096)
         if not chunk:
             raise BmapConnectionError("Device closed the RFCOMM connection")
         self._buffer.extend(chunk)
 
-    def _recv_frame(self):
+    def _recv_frame(self, deadline=None):
         """Read exactly one BMAP frame, preserving extra stream bytes."""
         while len(self._buffer) < 4:
-            self._recv_into_buffer()
+            self._recv_into_buffer(deadline)
         frame_length = 4 + self._buffer[3]
         while len(self._buffer) < frame_length:
-            self._recv_into_buffer()
+            self._recv_into_buffer(deadline)
         frame = bytes(self._buffer[:frame_length])
         del self._buffer[:frame_length]
         return frame
@@ -103,16 +109,23 @@ class RfcommTransport:
         """
         if not self._sock:
             raise BmapConnectionError("Not connected")
+        previous_timeout = self._sock.gettimeout()
         try:
             self._sock.sendall(packet)
-            data = self._recv_frame()
-            # The device also sends frames nobody asked for, such as a mode
-            # change made with a headset button. Taking one as the response
-            # would shift every later response by one frame. A drain keeps
-            # every frame because its callers filter by address themselves.
-            while not drain and data[:2] != packet[:2]:
+            if drain:
                 data = self._recv_frame()
+            else:
+                # The device also sends frames nobody asked for, such as a mode
+                # change made with a headset button. Taking one as the response
+                # would shift every later response by one frame. A drain keeps
+                # every frame because its callers filter by address themselves.
+                # One deadline bounds the whole wait, skipped frames included.
+                deadline = time.monotonic() + self.timeout
+                data = self._recv_frame(deadline)
+                while data[:2] != packet[:2]:
+                    data = self._recv_frame(deadline)
         except TimeoutError as e:
+            self._sock.settimeout(previous_timeout)
             if self._buffer:
                 self._buffer.clear()
                 raise BmapConnectionError(
@@ -120,10 +133,11 @@ class RfcommTransport:
                 ) from e
             raise BmapTimeoutError("No response from device") from e
         except OSError as e:
+            # The socket is broken. A call on it here would hide this error.
             raise _translate_socket_error(e, "communicate with device") from e
+        self._sock.settimeout(previous_timeout)
 
         if drain:
-            previous_timeout = self._sock.gettimeout()
             self._sock.settimeout(self.drain_timeout)
             try:
                 while True:

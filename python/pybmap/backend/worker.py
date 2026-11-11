@@ -17,7 +17,6 @@ from .protocol import (
 from .service import BackendService
 
 COALESCE_SECONDS = 0.025
-IDLE_CHECK_SECONDS = 30
 _EOF = object()
 
 
@@ -50,6 +49,14 @@ def _parse_work(line):
         return (None, exc)
 
 
+def _write(stdout, service, messages=()):
+    for message in messages:
+        stdout.write(encode_message(message))
+    for event, data in service.drain_events():
+        stdout.write(encode_message(event_message(event, data)))
+    stdout.flush()
+
+
 def run(stdin=None, stdout=None, stderr=None, service=None):
     stdin = stdin or sys.stdin
     stdout = stdout or sys.stdout
@@ -64,16 +71,14 @@ def run(stdin=None, stdout=None, stderr=None, service=None):
             item = (
                 backlog.popleft()
                 if backlog
-                else incoming.get(timeout=IDLE_CHECK_SECONDS)
+                else incoming.get(timeout=service.idle_timeout())
             )
         except Empty:
             try:
                 service.idle()
             except Exception as exc:  # The service already recorded the new state.
                 print("backend idle check failed: %s" % type(exc).__name__, file=stderr)
-            for event, data in service.drain_events():
-                stdout.write(encode_message(event_message(event, data)))
-            stdout.flush()
+            _write(stdout, service)
             continue
         if item is _EOF:
             break
@@ -129,11 +134,7 @@ def run(stdin=None, stdout=None, stderr=None, service=None):
                 for item in group
             ]
 
-        for message in messages:
-            stdout.write(encode_message(message))
-        for event, data in service.drain_events():
-            stdout.write(encode_message(event_message(event, data)))
-        stdout.flush()
+        _write(stdout, service, messages)
         if service.stopping:
             break
     return 0

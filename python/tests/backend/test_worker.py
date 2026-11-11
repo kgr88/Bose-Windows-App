@@ -19,6 +19,9 @@ class IdleService:
     def __init__(self, stdin):
         self.stdin = stdin
 
+    def idle_timeout(self):
+        return 0.01
+
     def idle(self):
         self.stdin.closed.set()
 
@@ -26,8 +29,7 @@ class IdleService:
         return [("connection_changed", {"state": "error"})]
 
 
-def test_quiet_worker_runs_the_idle_check_and_writes_its_events(monkeypatch):
-    monkeypatch.setattr(worker, "IDLE_CHECK_SECONDS", 0.01)
+def test_quiet_worker_runs_idle_work_when_the_service_asks_for_it():
     stdin, stdout = BlockedInput(), io.StringIO()
 
     worker.run(stdin, stdout, io.StringIO(), IdleService(stdin))
